@@ -33,6 +33,13 @@ export function getMatchStatus(m, activeNames, referenceRound=1) {
   if (activeNames.has(m.white) || activeNames.has(m.black)) return 'busy';
   return 'ready';
 }
+// Nas folgas, a coluna B do Google Sheets define a pontuação.
+// Ausência de valor equivale a zero, nunca a um ponto automático.
+export function byeScore(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return 0;
+  const parsed = Number(String(value).trim().replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 export function buildTournament(tournament){
   const source=tournament.matches || [];
   const matches=source.map((m,i)=>({...m,id:m.id || `r${m.round}-${i}`,result:getResult(m),round:Number(m.round)}));
@@ -48,12 +55,12 @@ export function buildTournament(tournament){
   const people=new Map();
   const make=(name)=>{
     if(!name) return null;
-    if(!people.has(name))people.set(name,{name,points:0,wins:0,draws:0,losses:0,played:0,byes:0,ongoing:0});
+    if(!people.has(name))people.set(name,{name,points:0,wins:0,draws:0,losses:0,played:0,byes:0,ongoing:0,byePoints:0});
     return people.get(name);
   };
   for(const m of decorated){
     const a=make(m.white),b=make(m.black);
-    if(m.derivedStatus==='bye'){if(a){a.points+=1;a.byes+=1;}continue;}
+    if(m.derivedStatus==='bye'){if(a){const pts=byeScore(m.byePoints);a.points+=pts;a.byePoints+=pts;a.byes+=1;}continue;}
     if(m.derivedStatus==='playing'){if(a)a.ongoing++;if(b)b.ongoing++;continue;}
     if(m.derivedStatus!=='finished')continue;
     if(a)a.played++;

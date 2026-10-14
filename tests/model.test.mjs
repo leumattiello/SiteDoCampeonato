@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl} from '../js/model.js';
+import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore} from '../js/model.js';
 
 const m=(round,white,black,result=null,status='Jogador em outra partida',extra={})=>({round,white,black,result,status,...extra});
 test('Resultado final substitui status antigo de em andamento',()=>{
@@ -17,10 +17,31 @@ test('Permite rodada seguinte; bloqueia rodada duas à frente',()=>{
  const t=buildTournament({currentRound:4,matches:[m(5,'Alice','Bruno'),m(6,'Carol','Dora'),m(1,'Enrico','Emanuel')]});
  assert.deepEqual(t.matches.map(m=>m.derivedStatus),['ready','future','ready']);
 });
-test('Bye soma 1 ponto, mas não entra nas partidas jogadas',()=>{
- const t=buildTournament({currentRound:2,matches:[m(1,'Ana',null,'bye','Bye'),m(2,'Ana','Bia','½-½','Finalizado')]});
+test('Bye usa o valor da coluna B, não pontuação fixa, e não conta como partida jogada',()=>{
+ const t=buildTournament({currentRound:2,matches:[
+   m(1,'Ana',null,'bye','Bye',{byePoints:0.5}),
+   m(2,'Ana','Bia','½-½','Finalizado'),
+   m(1,'Bia',null,'bye','Bye',{byePoints:0}),
+   m(2,'Carlos',null,'bye','Bye',{byePoints:1}),
+   m(3,'Dora',null,'bye','Bye',{byePoints:null}),
+ ]});
  const ana=t.standings.find(p=>p.name==='Ana');
- assert.equal(ana.points,1.5);assert.equal(ana.played,1);assert.equal(ana.byes,1);
+ assert.equal(ana.points,1);assert.equal(ana.played,1);assert.equal(ana.byes,1);assert.equal(ana.byePoints,0.5);
+ const bia=t.standings.find(p=>p.name==='Bia');
+ assert.equal(bia.points,0.5);assert.equal(bia.byePoints,0);
+ assert.equal(t.standings.find(p=>p.name==='Carlos').byePoints,1);
+ assert.equal(t.standings.find(p=>p.name==='Dora').byePoints,0);
+});
+test('Várias folgas somam os pontos informados',()=>{
+ const t=buildTournament({matches:[
+   m(1,'Ana',null,'bye','Bye',{byePoints:0.25}),
+   m(2,'Ana',null,'bye','Bye',{byePoints:0.5})
+ ]});
+ const ana=t.standings.find(p=>p.name==='Ana');
+ assert.equal(ana.points,0.75);assert.equal(ana.byePoints,0.75);assert.equal(ana.byes,2);
+ assert.equal(byeScore('0,5'),0.5);
+ assert.equal(byeScore(''),0);
+ assert.equal(byeScore(null),0);
 });
 test('Calcula partidas recentes e duração em dias usando datas',()=>{
  const t=buildTournament({currentRound:1,matches:[m(1,'Ana','Bia','1-0','Finalizado',{start:'01/10/2026',end:'2026-10-15'}),m(1,'Bia','Carlos','0-1','Finalizado',{start:'03/10/2026',end:'2026-10-11'})]});

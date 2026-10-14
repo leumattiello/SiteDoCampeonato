@@ -1,11 +1,11 @@
-import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays} from './model.js';
+import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays,byeScore} from './model.js';
 const dataUrl='./data/campeonatos.json';
 const storageKey='reinos-xadrez-jogador';
 let store=null, current=null, archive=null, selected='', activePage='inicio', roundSelected=4, device='celular';
 const byId=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const s=value=>escapeHTML(value);
-const number=value=>Number.isInteger(value)?String(value):Number(value).toLocaleString('pt-BR',{maximumFractionDigits:1});
+const number=value=>Number.isInteger(value)?String(value):Number(value).toLocaleString('pt-BR',{maximumFractionDigits:10});
 const COLORS=['#456f81','#934e4c','#53806a','#93763d','#685e91','#ac6f42','#657782','#7a5c56','#6f814b','#446e62'];
 const colorFor=name=>{let hash=0;for(const ch of String(name)) hash=(hash*31+ch.codePointAt(0))>>>0;return COLORS[hash%COLORS.length];};
 const formattedName=name=>{if(!name)return '—';const nick=store?.players?.find(p=>p.name===name)?.lichess;return `${name}${nick?` (${nick})`:''}`;};
@@ -17,6 +17,28 @@ const statusNames={bye:'Folga (Bye)',finished:'Finalizada',playing:'Em andamento
 const statusClasses={bye:'bye',finished:'finished',playing:'playing',ready:'ready',busy:'busy',future:'future','missing-result':'future'};
 const chip=st=>`<span class="status-chip status-${statusClasses[st]||'future'}">${statusNames[st]||s(st)}</span>`;
 const urlAnchor=(m,label='Ver no Lichess ↗',klass='action-link')=>{const href=validLichessUrl(m.url);return href?`<a class="${klass}" href="${s(href)}" target="_blank" rel="noopener noreferrer">${s(label)}</a>`:`<span class="${klass} disabled" title="O organizador ainda não cadastrou o link">Link pendente</span>`;};
+// Atalho administrativo apenas VISUAL. Selecionar "Humberto" nao autentica ninguem;
+// o GitHub exige login e permissao de escrita para executar pages.yml.
+// No dominio github.io, o dono e o repositorio sao descobertos automaticamente.
+// Se o site tiver dominio proprio, preencha REINOS_GITHUB_REPOSITORY como "dono/repositorio".
+const REINOS_GITHUB_REPOSITORY='';
+function workflowLink(){
+  let owner='',repo='';
+  if(REINOS_GITHUB_REPOSITORY){
+    [owner,repo]=REINOS_GITHUB_REPOSITORY.split('/');
+  }else{
+    const host=location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
+    if(host){owner=host[1];repo=location.pathname.split('/').filter(Boolean)[0]||'reinos-do-xadrez';}
+  }
+  if(!owner||!repo||![owner,repo].every(v=>/^[a-z0-9][a-z0-9_.-]*$/i.test(v)))return null;
+  return `https://github.com/${owner}/${repo}/actions/workflows/pages.yml`;
+}
+function updateManualSyncLink(){
+  const link=byId('manual-sync-link');
+  const href=workflowLink();
+  link.hidden=!(selected==='Humberto'&&href);
+  if(href)link.href=href;
+}
 function showToast(text){const toast=byId('toast');toast.textContent=text;toast.classList.add('visible');clearTimeout(showToast.handle);showToast.handle=setTimeout(()=>toast.classList.remove('visible'),3500);}
 function showPage(name){
   if(!['inicio','classificacao','rodadas','gloria','academia','historico'].includes(name))name='inicio';
@@ -64,12 +86,12 @@ function drawGlory(){
   ];
   byId('glory-content').innerHTML=cards.map(v=>`<article class="honor-card"><div class="medal" aria-hidden="true">${v.icon}</div><h2>${v.name}</h2><p>${v.desc}</p><div class="holder">${v.holder?s(v.holder):'Aguardando dados suficientes'}</div></article>`).join('');
 }
-function standingsMarkup(t){return `<div class="table-wrap"><table class="standings-table"><thead><tr><th>Pos.</th><th>Jogador</th><th>Pontos</th><th>J</th><th>V</th><th>E</th><th>D</th><th>Bye</th></tr></thead><tbody>${t.standings.map((p,i)=>`<tr><td>${i===0?'<span class="champion-crown" title="Líder">♛</span>':i+1+'º'}</td><td><div class="table-player">${flagSmall(p.name,i===0)}<span>${s(formattedName(p.name))}</span></div></td><td class="num"><strong>${number(p.points)}</strong></td><td class="num">${p.played}</td><td class="num">${p.wins}</td><td class="num">${p.draws}</td><td class="num">${p.losses}</td><td class="num">${p.byes}</td></tr>`).join('')}</tbody></table></div>`;}
-function drawStandings(){byId('classificacao-content').innerHTML=standingsMarkup(current)+`<p class="table-note"><strong>Como calculamos:</strong> vitória = 1 ponto; empate = 0,5; derrota = 0; folga (Bye) = 1. J = partidas efetivamente disputadas (não inclui folgas). Em caso de igualdade em pontos, a exibição usa vitórias e depois ordem alfabética; esse ordenamento não define um desempate oficial do campeonato.</p>`;}
+function standingsMarkup(t){return `<div class="table-wrap"><table class="standings-table"><thead><tr><th>Pos.</th><th>Jogador</th><th>Pontos</th><th>J</th><th>V</th><th>E</th><th>D</th><th title="Pontos recebidos nas folgas">Bye (pts)</th></tr></thead><tbody>${t.standings.map((p,i)=>`<tr><td>${i===0?'<span class="champion-crown" title="Líder">♛</span>':i+1+'º'}</td><td><div class="table-player">${flagSmall(p.name,i===0)}<span>${s(formattedName(p.name))}</span></div></td><td class="num"><strong>${number(p.points)}</strong></td><td class="num">${p.played}</td><td class="num">${p.wins}</td><td class="num">${p.draws}</td><td class="num">${p.losses}</td><td class="num">${number(p.byePoints)}</td></tr>`).join('')}</tbody></table></div>`;}
+function drawStandings(){byId('classificacao-content').innerHTML=standingsMarkup(current)+`<p class="table-note"><strong>Como calculamos:</strong> vitória = 1 ponto; empate = 0,5; derrota = 0; folga (Bye) = valor informado na coluna B da planilha (sem valor = 0). J = partidas efetivamente disputadas (não inclui folgas). Em caso de igualdade em pontos, a exibição usa vitórias e depois ordem alfabética; esse ordenamento não define um desempate oficial do campeonato.</p>`;}
 function fixtureMarkup(m){
   const whiteWon=m.result==='1-0',blackWon=m.result==='0-1';
   const label=m.derivedStatus==='bye'?'Folga (Bye)':statusNames[m.derivedStatus];
-  const score=m.result&&m.result!=='bye'?`<div class="fixture-result">${s(m.result)}</div>`:'';
+  const score=m.derivedStatus==='bye'?`<div class="fixture-result">${number(byeScore(m.byePoints))} pt</div>`:m.result?`<div class="fixture-result">${s(m.result)}</div>`:'';
   const dateParts=[m.start?`Início: ${dateText(m.start)}`:'',m.end?`Fim: ${dateText(m.end)}`:'',m.duration!==null?`${m.duration} dias`:'' ].filter(Boolean).join(' · ');
   return `<div class="fixture-row"><div><div class="fixture-names">${flagSmall(m.white,whiteWon)} <span>${s(formattedName(m.white))}</span> ${m.black?`<span class="fixture-vs">×</span> ${flagSmall(m.black,blackWon)} <span>${s(formattedName(m.black))}</span>`:'<span class="fixture-vs">— Folga</span>'}</div><div class="fixture-summary">${chip(m.derivedStatus)}<span>${dateParts?s(dateParts):m.derivedStatus==='bye'?'Descansa nesta rodada':`Rodada ${m.round}`}</span></div></div><div class="fixture-action">${score}${m.derivedStatus==='bye'?'':urlAnchor(m)}</div></div>`;
 }
@@ -97,7 +119,7 @@ async function init(){
     const round=e.target.closest('[data-round]');if(round){roundSelected=Number(round.dataset.round);drawRounds();}
     const dev=e.target.closest('[data-device]');if(dev){device=dev.dataset.device;document.querySelectorAll('[data-device]').forEach(b=>{b.classList.toggle('selected',b===dev);b.setAttribute('aria-pressed',String(b===dev));});drawTutorials();}
   });
-  byId('player-select').addEventListener('change',e=>{selected=e.target.value;try{localStorage.setItem(storageKey,selected);}catch{}drawMyBattle();showToast(selected?`Pronto! Mostrando as partidas de ${selected}.`:'Seleção de jogador removida.');});
+  byId('player-select').addEventListener('change',e=>{selected=e.target.value;try{localStorage.setItem(storageKey,selected);}catch{}drawMyBattle();updateManualSyncLink();showToast(selected?`Pronto! Mostrando as partidas de ${selected}.`:'Seleção de jogador removida.');});
   window.addEventListener('hashchange',()=>showPage(location.hash.slice(1)));
   try{
     const result=await fetch(dataUrl,{cache:'no-store'});
@@ -110,6 +132,7 @@ async function init(){
     if(selected && !current.standings.some(p=>p.name===selected))selected='';
     byId('player-select').innerHTML='<option value="">Escolha seu jogador</option>'+current.standings.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(p=>`<option value="${s(p.name)}">${s(p.name)}</option>`).join('');
     byId('player-select').value=selected;
+    updateManualSyncLink();
     const stamp=store.source?.lastSync;
     byId('last-update').textContent=stamp?`Última importação: ${new Date(stamp).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:'Versão inicial importada do arquivo fornecido';
     byId('source-pill').classList.add(stamp?'synced':'error');

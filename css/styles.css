@@ -19,3 +19,4 @@
 .device-help{max-width:850px;margin:0 0 18px;padding:13px 16px;background:#f8f0dd;border:1px solid #decda9;border-left:4px solid #ad8546;color:#5c554b;font-size:13px;line-height:1.7}
 .device-help strong{color:#3b4035}
 @media(max-width:420px){.device-toggle{display:flex;flex-wrap:wrap;width:100%}.device-toggle button{flex:1 1 140px}}
+

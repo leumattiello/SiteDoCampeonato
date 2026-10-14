@@ -17,28 +17,6 @@ const statusNames={bye:'Folga (Bye)',finished:'Finalizada',playing:'Em andamento
 const statusClasses={bye:'bye',finished:'finished',playing:'playing',ready:'ready',busy:'busy',future:'future','missing-result':'future'};
 const chip=st=>`<span class="status-chip status-${statusClasses[st]||'future'}">${statusNames[st]||s(st)}</span>`;
 const urlAnchor=(m,label='Ver no Lichess ↗',klass='action-link')=>{const href=validLichessUrl(m.url);return href?`<a class="${klass}" href="${s(href)}" target="_blank" rel="noopener noreferrer">${s(label)}</a>`:`<span class="${klass} disabled" title="O organizador ainda não cadastrou o link">Link pendente</span>`;};
-// Atalho administrativo apenas VISUAL. Selecionar "Humberto" nao autentica ninguem;
-// o GitHub exige login e permissao de escrita para executar pages.yml.
-// No dominio github.io, o dono e o repositorio sao descobertos automaticamente.
-// Se o site tiver dominio proprio, preencha REINOS_GITHUB_REPOSITORY como "dono/repositorio".
-const REINOS_GITHUB_REPOSITORY='';
-function workflowLink(){
-  let owner='',repo='';
-  if(REINOS_GITHUB_REPOSITORY){
-    [owner,repo]=REINOS_GITHUB_REPOSITORY.split('/');
-  }else{
-    const host=location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
-    if(host){owner=host[1];repo=location.pathname.split('/').filter(Boolean)[0]||'reinos-do-xadrez';}
-  }
-  if(!owner||!repo||![owner,repo].every(v=>/^[a-z0-9][a-z0-9_.-]*$/i.test(v)))return null;
-  return `https://github.com/${owner}/${repo}/actions/workflows/pages.yml`;
-}
-function updateManualSyncLink(){
-  const link=byId('manual-sync-link');
-  const href=workflowLink();
-  link.hidden=!(selected==='Humberto'&&href);
-  if(href)link.href=href;
-}
 function showToast(text){const toast=byId('toast');toast.textContent=text;toast.classList.add('visible');clearTimeout(showToast.handle);showToast.handle=setTimeout(()=>toast.classList.remove('visible'),3500);}
 function showPage(name){
   if(!['inicio','classificacao','rodadas','gloria','academia','historico'].includes(name))name='inicio';
@@ -119,7 +97,7 @@ async function init(){
     const round=e.target.closest('[data-round]');if(round){roundSelected=Number(round.dataset.round);drawRounds();}
     const dev=e.target.closest('[data-device]');if(dev){device=dev.dataset.device;document.querySelectorAll('[data-device]').forEach(b=>{b.classList.toggle('selected',b===dev);b.setAttribute('aria-pressed',String(b===dev));});drawTutorials();}
   });
-  byId('player-select').addEventListener('change',e=>{selected=e.target.value;try{localStorage.setItem(storageKey,selected);}catch{}drawMyBattle();updateManualSyncLink();showToast(selected?`Pronto! Mostrando as partidas de ${selected}.`:'Seleção de jogador removida.');});
+  byId('player-select').addEventListener('change',e=>{selected=e.target.value;try{localStorage.setItem(storageKey,selected);}catch{}drawMyBattle();showToast(selected?`Pronto! Mostrando as partidas de ${selected}.`:'Seleção de jogador removida.');});
   window.addEventListener('hashchange',()=>showPage(location.hash.slice(1)));
   try{
     const result=await fetch(dataUrl,{cache:'no-store'});
@@ -132,7 +110,6 @@ async function init(){
     if(selected && !current.standings.some(p=>p.name===selected))selected='';
     byId('player-select').innerHTML='<option value="">Escolha seu jogador</option>'+current.standings.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(p=>`<option value="${s(p.name)}">${s(p.name)}</option>`).join('');
     byId('player-select').value=selected;
-    updateManualSyncLink();
     const stamp=store.source?.lastSync;
     byId('last-update').textContent=stamp?`Última importação: ${new Date(stamp).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:'Versão inicial importada do arquivo fornecido';
     byId('source-pill').classList.add(stamp?'synced':'error');

@@ -5,7 +5,7 @@ Site gratuito para campeonatos de xadrez por correspondência, hospedado no **Gi
 ## O que já funciona
 
 - Página inicial medieval e responsiva; visualização por participante (seleção salva apenas no próprio navegador).
-- Classificação calculada automaticamente: vitória 1, empate 0,5, derrota 0 e folga 1 ponto.
+- Classificação calculada automaticamente: vitória 1, empate 0,5, derrota 0 e folga com pontuação variável definida pela coluna B da respectiva linha na planilha.
 - Rodadas Schuring; confronto pronto apenas se os dois não estiverem disputando outra partida e sua rodada for no máximo **rodada atual + 1**. Uma partida antiga (abaixo da rodada atual) pode ser iniciada se ambos estiverem livres.
 - **Resultado sobrepõe status**: o placar `1–0`, `0–1` ou `½–½` é tratado como finalizado mesmo que E ainda diga `Em andamento`.
 - Links do Lichess (quando preenchidos); datas de início/fim; duração em dias; últimas cinco partidas por data de fim (quando informada).
@@ -27,7 +27,7 @@ Site gratuito para campeonatos de xadrez por correspondência, hospedado no **Gi
 | G (nova) | Data de início | `14/10/2026` |
 | H (nova) | Data de encerramento | `28/10/2026` |
 
-Nas linhas de folga (`Bye` em E), D fica vazia e B pode ter 1 ponto. Não preencher resultado `1–0` antes do encerramento. Para a URL use o endereço completo como texto visível da célula; evite `=HYPERLINK(...; "Clique aqui")`, que pode exportar só o rótulo.
+Nas linhas de folga (`Bye` em E), D fica vazia e **B define a pontuação concedida** (ex.: `1`, `0,5` ou `0`). B vazia equivale a 0 ponto. A coluna **Bye (pts)** da classificação exibe os pontos recebidos em folgas, não a quantidade de folgas. Não preencher resultado `1–0` antes do encerramento. Para a URL use o endereço completo como texto visível da célula; evite `=HYPERLINK(...; "Clique aqui")`, que pode exportar só o rótulo.
 
 Se alguém registrar pontos e esquecer de trocar E de `Em andamento` para `Finalizado`, o resultado terá prioridade. Se marcar `Finalizado` mas **não** preencher B e C, o site sinalizará `Falta informar o resultado` e não atribuirá pontos.
 
@@ -76,7 +76,7 @@ O importador usa `GOOGLE_SHEET_ID` de ambiente quando informado, caso contrário
 
 Abra o terminal na pasta do projeto e rode `python -m http.server 8000` (no Ubuntu pode ser `python3 -m http.server 8000`), depois abra `http://localhost:8000`. Abrir `index.html` diretamente com `file://` não funciona porque o navegador bloqueia a leitura de JSON local.
 
-Para testar a lógica, com Node.js instalado, execute `npm test`. Para testar o importador localmente, `python3 scripts/sync_google_sheets.py` (necessita acesso à internet e planilha publicada).
+Para testar a lógica, com Node.js instalado, execute `npm test`; para testar a leitura da coluna B no importador, execute `python -m unittest discover -s tests -p "test_*.py"` (ou `python3` no Ubuntu). Para testar o importador localmente, `python3 scripts/sync_google_sheets.py` (necessita acesso à internet e planilha publicada).
 
 ## Limites e próximos ajustes
 
@@ -86,3 +86,8 @@ Para testar a lógica, com Node.js instalado, execute `npm test`. Para testar o 
 - As datas do Google podem vir formatadas segundo a localidade da planilha. Recomenda-se `dd/mm/aaaa` para G e H.
 - Se adicionar/remover linhas em uma edição, confira os IDs derivados de número da linha. Os cálculos em si são feitos pelo conteúdo atual da planilha.
 - As abas auxiliares `Config` e `Jogadores` são opcionais; só passam a controlar esses dados depois de criadas e sincronizadas com sucesso.
+
+
+## Atualizar a planilha manualmente
+
+Para sincronizar os resultados sem esperar a execução automática, no repositório GitHub acesse **Actions → Publicar campeonato → Run workflow**, selecione `main` e confirme. Quando a publicação terminar, atualize a página do site. Não existe botão administrativo no site; a atualização é controlada pelo GitHub Actions.

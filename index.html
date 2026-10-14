@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151c20">
+  <meta name="description" content="Acompanhe o campeonato de xadrez por correspondência, descubra seu próximo confronto e celebre as grandes partidas.">
+  <title>Reinos do Xadrez — Campeonato por Correspondência</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/styles.css">
+  <script type="module" src="./js/app.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" aria-label="Menu principal">
+      <a class="brand" href="#inicio" data-nav="inicio" aria-label="Reinos do Xadrez, início">
+        <div class="brand-sigil" aria-hidden="true">♞</div>
+        <div class="brand-text"><strong>REINOS<br>DO XADREZ</strong><span>CRÔNICAS DO TABULEIRO</span></div>
+      </a>
+      <div class="sidebar-rule"><span>✦</span></div>
+      <p class="nav-caption">O CAMINHO DO REINO</p>
+      <nav class="primary-nav" aria-label="Páginas do campeonato">
+        <button type="button" class="nav-link active" data-view="inicio" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span> Início</button>
+        <button type="button" class="nav-link" data-view="classificacao"><span class="nav-icon" aria-hidden="true">♛</span> Tabela</button>
+        <button type="button" class="nav-link" data-view="rodadas"><span class="nav-icon" aria-hidden="true">⚔</span> Rodadas</button>
+        <button type="button" class="nav-link" data-view="gloria"><span class="nav-icon" aria-hidden="true">✹</span> Glória</button>
+        <button type="button" class="nav-link" data-view="academia"><span class="nav-icon" aria-hidden="true">♜</span> Ajuda</button>
+        <button type="button" class="nav-link" data-view="historico"><span class="nav-icon" aria-hidden="true">▣</span> Histórico</button>
+      </nav>
+      <div class="sidebar-end">
+        <div class="codex-card">
+          <div class="codex-star" aria-hidden="true">✦</div>
+          <p class="eyebrow">LEIS DO REINO</p>
+          <h3>Uma jogada<br>por dia.</h3>
+          <p>Tempo para pensar. Glória para conquistar.</p>
+          <span>♟ CORRESPONDÊNCIA</span>
+        </div>
+        <small>FEITO PARA A CONFRARIA DE XADREZ</small>
+      </div>
+    </aside>
+
+    <div class="content-shell">
+      <header class="topbar">
+        <div class="topbar-left"><span class="topbar-glyph" aria-hidden="true">✢</span> <span>CAMPEONATO POR CORRESPONDÊNCIA</span></div>
+        <div class="topbar-controls">
+          <span class="source-pill" id="source-pill" role="status"><span class="source-dot"></span> Carregando dados…</span>
+          <label class="player-select-wrap" for="player-select"><span aria-hidden="true">♟</span> <span class="visually-hidden">Escolha seu jogador</span><select id="player-select"><option value="">Escolha seu jogador</option></select></label>
+        </div>
+      </header>
+      <main id="main" tabindex="-1">
+        <section class="view" id="view-inicio" data-page="inicio" aria-labelledby="hero-title">
+          <section class="hero">
+            <div class="hero-grain" aria-hidden="true"></div>
+            <div class="hero-art" aria-hidden="true">
+              <div class="hero-halo"></div>
+              <svg class="castle" viewBox="0 0 570 460" xmlns="http://www.w3.org/2000/svg" role="presentation">
+                <defs><linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d8b77a"/><stop offset="1" stop-color="#765435"/></linearGradient></defs>
+                <path fill="#1d2725" d="M0 405L76 380l64 14 72-23 48 29 69-39 52 23 95-27 94 44v59H0z"/>
+                <path fill="#80603d" d="M84 350h39V187h50v163h33V261h68v89h32V159h60v191h30V209h53v141h35v110H84z"/>
+                <path fill="url(#stone)" d="M102 341h56V191h-11v-24h-13v24h-13v-24h-13v24h-6zm118 0h70v-77h-12v-18h-14v18h-16v-18h-14v18h-14zm100 0h77V151h-12v-26h-15v26h-16v-26h-15v26h-19zm90 0h65V212h-11v-24h-14v24h-16v-24h-14v24h-10z" opacity=".86"/>
+                <path fill="#3b3028" d="M116 270c0-25 29-25 29 0v43h-29zm238-38c0-37 30-37 30 0v53h-30zm80 50c0-28 25-28 25 0v48h-25z"/>
+                <path fill="#342927" d="M257 460v-88c0-73 71-73 71 0v88z"/>
+                <path fill="#b99b60" d="M350 120h5v-59h4v59h4v16h-13z"/>
+                <path fill="#bd5c46" d="M359 61l66 19-66 23z"/>
+                <path fill="#182120" d="M0 445l86-24 61 20 50-13 45 17 90-15 80 12 70-20 88 16v22H0z"/>
+              </svg>
+              <span class="float-piece">♞</span>
+            </div>
+            <div class="hero-copy">
+              <div class="hero-kicker"><span class="tiny-diamond">◆</span> <span>O REINO ESTÁ EM DISPUTA</span> <span class="tiny-diamond">◆</span></div>
+              <h1 id="hero-title">Cada lance<br>constrói <em>uma lenda.</em></h1>
+              <p>Estratégia, paciência e rivalidade. Acompanhe as batalhas do tabuleiro e descubra seu próximo desafio.</p>
+              <div class="hero-actions">
+                <button type="button" class="button button-gold" data-view="rodadas">Ver confrontos <span aria-hidden="true">↗</span></button>
+                <button type="button" class="button button-outline" data-view="classificacao">Classificação <span aria-hidden="true">›</span></button>
+              </div>
+            </div>
+            <div class="hero-mark">♜ <span>EST. 2026</span> ♜</div>
+          </section>
+          <div class="snapshot-line"><span>✦ &nbsp; O ESTADO DO REINO</span><span id="last-update">Edição atual</span></div>
+          <div class="stat-grid" id="stats-grid" aria-label="Estatísticas do campeonato"></div>
+          <div class="home-grid">
+            <section class="panel my-battle-panel" aria-labelledby="my-battle-title">
+              <div class="panel-heading"><div><span class="overline">SEU ESTANDARTE</span><h2 id="my-battle-title">Minha próxima batalha</h2></div><span class="panel-flourish">⚔</span></div>
+              <div id="my-battle-content"></div>
+            </section>
+            <section class="panel top-panel" aria-labelledby="leaders-title">
+              <div class="panel-heading"><div><span class="overline">DISPUTA PELO TRONO</span><h2 id="leaders-title">Os líderes</h2></div><button type="button" class="text-link" data-view="classificacao">Ver tabela ›</button></div>
+              <div id="leaderboard-preview"></div>
+            </section>
+            <section class="panel latest-panel" aria-labelledby="recent-title">
+              <div class="panel-heading"><div><span class="overline">CRÔNICAS RECENTES</span><h2 id="recent-title">Últimos confrontos</h2></div><button type="button" class="text-link" data-view="rodadas">Todas as partidas ›</button></div>
+              <p class="small-notice" id="recent-notice"></p><div id="recent-matches"></div>
+            </section>
+            <section class="panel glory-panel" aria-labelledby="glory-title">
+              <div class="panel-heading"><div><span class="overline">FEITOS IMORTAIS</span><h2 id="glory-title">Salão da Glória</h2></div><button type="button" class="text-link" data-view="gloria">Explorar ›</button></div>
+              <div id="glory-preview"></div>
+              <div class="academy-teaser"><div class="teaser-icon">♜</div><div><strong>Precisa de ajuda com o Lichess?</strong><p>A Academia ensina como criar uma partida e aceitar um desafio.</p></div><button type="button" class="round-button" aria-label="Abrir Academia" data-view="academia">↗</button></div>
+            </section>
+          </div>
+        </section>
+        <section class="view hidden" id="view-classificacao" data-page="classificacao" aria-labelledby="classificacao-title"><div class="page-heading"><span class="overline">O PESO DA COROA</span><h1 id="classificacao-title">Classificação do Reino</h1><p>A disputa pelo trono, lance após lance. Pontuações calculadas a partir dos resultados registrados.</p></div><div id="classificacao-content" class="panel long-panel"></div></section>
+        <section class="view hidden" id="view-rodadas" data-page="rodadas" aria-labelledby="rodadas-title"><div class="page-heading"><span class="overline">MAPA DA CAMPANHA</span><h1 id="rodadas-title">Rodadas e confrontos</h1><p>Veja quem está jogando, quais batalhas podem começar e as rodadas ainda bloqueadas.</p></div><div class="panel long-panel"><div class="rounds-toolbar"><div id="round-buttons" class="round-buttons" role="group" aria-label="Selecionar rodada"></div><div class="status-legend"><span><i class="legend-dot ready"></i> Pode começar</span><span><i class="legend-dot playing"></i> Em andamento</span><span><i class="legend-dot locked"></i> Bloqueada</span></div></div><div id="round-content"></div></div></section>
+        <section class="view hidden" id="view-gloria" data-page="gloria" aria-labelledby="gloria-title-full"><div class="page-heading"><span class="overline">HONRAS DA COROA</span><h1 id="gloria-title-full">Salão da Glória</h1><p>Mais do que pontos: as conquistas, os grandes cercos e as façanhas dos cavaleiros.</p></div><div id="glory-content" class="honors-grid"></div></section>
+        <section class="view hidden" id="view-academia" data-page="academia" aria-labelledby="academia-title"><div class="page-heading"><span class="overline">A ESCOLA DOS CAVALEIROS</span><h1 id="academia-title">Academia do Lichess</h1><p>Não precisa entender de computador para jogar. Escolha o que deseja fazer e siga as instruções.</p></div><div class="tutorial-intro"><div class="tutorial-emblem">♞</div><div><strong>Aprender também faz parte da aventura.</strong><p>Vamos mostrar uma etapa de cada vez. Você não precisa memorizar nada.</p></div></div><div class="device-toggle" aria-label="Tipo de dispositivo"><button type="button" data-device="celular" class="selected" aria-pressed="true">▣ &nbsp; Estou no celular</button><button type="button" data-device="computador" aria-pressed="false">▤ &nbsp; Estou no computador</button></div><p class="device-help"><strong>Também funciona no celular:</strong> para seguir as instruções de <strong>“Estou no computador”</strong>, abra <strong>lichess.org</strong> no <strong>Chrome, Firefox ou outro navegador</strong> do celular, sem usar o aplicativo. A posição dos botões pode variar conforme a tela.</p><div id="tutorial-content" class="tutorial-grid"></div><div class="tutorial-foot"><strong>Não encontrou um botão com o mesmo nome?</strong> O Lichess pode alterar sua interface com o tempo. Peça ajuda ao organizador e informe em qual etapa encontrou dificuldade.</div></section>
+        <section class="view hidden" id="view-historico" data-page="historico" aria-labelledby="historico-title"><div class="page-heading"><span class="overline">NOS ANAIS DO REINO</span><h1 id="historico-title">Arquivo dos Reinos</h1><p>Os campeonatos que já terminaram também fazem parte da nossa história.</p></div><div id="history-content"></div></section>
+      </main>
+      <footer><span>♞ REINOS DO XADREZ</span><p>Uma casa para nossas batalhas. As partidas são jogadas no <a href="https://lichess.org/" target="_blank" rel="noopener noreferrer">Lichess ↗</a>.</p><span id="footer-source">Dados da planilha do campeonato</span></footer>
+    </div>
+  </div>
+  <div role="status" class="toast" id="toast" aria-live="polite"></div>
+</body>
+</html>

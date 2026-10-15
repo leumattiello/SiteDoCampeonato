@@ -27,6 +27,20 @@ jobs:
         run: python3 scripts/sync_google_sheets.py
       - name: Validar jogadores no Lichess (melhoria #1)
         run: python3 scripts/validate_lichess_players.py
+      - name: Recuperar cache das partidas Lichess (melhoria #2)
+        uses: actions/cache@v4
+        with:
+          path: .cache/lichess-games.json
+          key: lichess-public-games-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            lichess-public-games-${{ runner.os }}-
+      - name: Consultar partidas no Lichess (melhoria #2)
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python3 scripts/sync_lichess_games.py --refresh-active
+          else
+            python3 scripts/sync_lichess_games.py
+          fi
       - name: Preparar arquivos públicos
         run: |
           mkdir -p _site/css _site/js _site/data

@@ -11,7 +11,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 
 from scripts.sync_lichess_games import (
-    GameUnavailable, GameNotFound, RateLimited, cache_fresh, fetch_public_game,
+    GameUnavailable, GameNotFound, GameAccessDenied, RateLimited, cache_fresh, fetch_public_game,
     load_cache, main, normalize_game, parse_game_id, sync_games,
 )
 
@@ -54,6 +54,62 @@ class GameSyncTest(unittest.TestCase):
         self.assertIsNone(parse_game_id('http://lichess.org/aB12cD34'))
         self.assertIsNone(parse_game_id('https://lichess.org/aB12cD34/abcdefghi'))
         self.assertIsNone(parse_game_id(''))
+
+    def test_12_char_link_uses_8_char_public_id_without_leaking_private_suffix(self):
+        self.assertEqual(parse_game_id('https://lichess.org/Ab12Cd34wxyz'), 'Ab12Cd34')
+        self.assertEqual(parse_game_id('https://lichess.org/Ef56Gh78jkLM/white#12'), 'Ef56Gh78')
+        self.assertEqual(parse_game_id('https://lichess.org/Ab12Cd34'), 'Ab12Cd34')
+        data = fixture(url='https://lichess.org/Ab12Cd34wxyz')
+        called = []
+        with redirect_stdout(io.StringIO()):
+            summary = sync_games(data, lookup=lambda gid: called.append(gid) or game(id=gid), now=NOW, pause=lambda _: None)
+        self.assertEqual(called, ['Ab12Cd34'])
+        self.assertEqual(summary['jogos_unicos'], 1)
+        self.assertEqual(data['tournaments'][0]['matches'][0]['lichessGame']['id'], 'Ab12Cd34')
+        self.assertEqual(data['tournaments'][0]['matches'][0]['url'], 'https://lichess.org/Ab12Cd34wxyz')
+
+    def test_secret_and_public_urls_for_same_game_deduplicate_api_calls(self):
+        data = fixture(url='https://lichess.org/Ef56Gh78jkLM')
+        other = copy.deepcopy(data['tournaments'][0]['matches'][0])
+        other['url'] = 'https://lichess.org/Ef56Gh78'
+        data['tournaments'][0]['matches'].append(other)
+        calls = []
+        with redirect_stdout(io.StringIO()):
+            summary = sync_games(data, lookup=lambda ident: calls.append(ident) or game(id=ident), now=NOW, pause=lambda _:None)
+        self.assertEqual(calls, ['Ef56Gh78'])
+        self.assertEqual(summary['jogos_unicos'], 1)
+        self.assertEqual(summary['links'], 2)
+
+    def test_http_401_is_distinguished_from_http_404(self):
+        data = fixture()
+        m = copy.deepcopy(data['tournaments'][0]['matches'][0])
+        m['url'] = 'https://lichess.org/eF34gH56'
+        data['tournaments'][0]['matches'].append(m)
+        def look(gid):
+            if gid == 'aB12cD34':
+                raise GameAccessDenied('HTTP 401')
+            raise GameNotFound('HTTP 404')
+        with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
+            summary = sync_games(data, lookup=look, now=NOW, pause=lambda _:None)
+        matches = data['tournaments'][0]['matches']
+        self.assertEqual(summary['acesso_restrito'], 1)
+        self.assertEqual(summary['nao_encontrado'], 1)
+        self.assertEqual(summary['indisponivel'], 2)
+        self.assertEqual(matches[0]['lichessImport']['status'], 'acesso_restrito')
+        self.assertEqual(matches[0]['lichessImport']['httpStatus'], 401)
+        self.assertEqual(matches[-1]['lichessImport']['status'], 'nao_encontrado')
+        self.assertEqual(matches[-1]['lichessImport']['httpStatus'], 404)
+        self.assertEqual(matches[0]['result'], '1-0')
+
+    def test_export_rejects_12_character_ids_even_if_link_parser_accepts_them(self):
+        with self.assertRaisesRegex(ValueError, '8 caracteres'):
+            fetch_public_game('Ab12Cd34wxyz', opener=lambda *args, **kw: self.fail('no request expected'))
+
+    def test_actual_http_401_maps_to_access_denied_not_rate_limit(self):
+        def fake_open(*_a, **_kw):
+            raise HTTPError('https://lichess.org/game/export/aB12cD34', 401, 'Unauthorized', {}, None)
+        with self.assertRaises(GameAccessDenied):
+            fetch_public_game('aB12cD34', opener=fake_open)
 
     def test_game_data_is_additive_and_preserves_official_scores_and_bye(self):
         data = fixture()
@@ -127,7 +183,7 @@ class GameSyncTest(unittest.TestCase):
             summary = sync_games(data, lookup=lookup, now=NOW, pause=lambda _: None)
         self.assertEqual(summary['indisponivel'], 1)
         self.assertEqual(summary['consultados'], 1)
-        self.assertEqual(data['tournaments'][0]['matches'][0]['lichessImport']['status'], 'indisponivel')
+        self.assertEqual(data['tournaments'][0]['matches'][0]['lichessImport']['status'], 'nao_encontrado')
         self.assertEqual(data['tournaments'][0]['matches'][-1]['lichessGame']['id'], 'CC12dd34')
 
     def test_429_stops_following_calls(self):

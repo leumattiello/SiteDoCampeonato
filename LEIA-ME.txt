@@ -1,0 +1,23 @@
+Correção da melhoria #2: identificadores Lichess de 12 caracteres + erros HTTP 401/404
+
+Arquivos do pacote:
+  scripts/sync_lichess_games.py
+  tests/test_sync_lichess_games.py
+  docs/melhoria-02-integracao-jogos-lichess.md
+
+Extraia na RAIZ do repositório Reinos do Xadrez, mantendo as pastas.
+Não precisa modificar a planilha nem cadastrar token Lichess.
+
+Comandos no PowerShell (na pasta do repositório):
+  Expand-Archive -Path "$HOME\Downloads\reinos-do-xadrez-correcao-lichess-401-404.zip" -DestinationPath . -Force
+  git diff --check
+  git status
+  git add scripts/sync_lichess_games.py tests/test_sync_lichess_games.py docs/melhoria-02-integracao-jogos-lichess.md
+  git commit -m "fix: corrigir ids privados e diagnosticos Lichess"
+  git push
+
+GitHub -> Actions -> Publicar campeonato -> Run workflow.
+
+Nota: 12 caracteres -> primeiros 8 para o endpoint /game/export.
+      HTTP 401 não implica erro do link e não é corrigido automaticamente.
+      Verificar via navegador em janela privada, sem iniciar sessão.

@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_JSON = ROOT / 'data' / 'campeonatos.json'
 DEFAULT_CACHE = ROOT / '.cache' / 'lichess-games.json'
 GAME_ID = re.compile(r'^[A-Za-z0-9]{8}(?:[A-Za-z0-9]{4})?$')
+PUBLIC_GAME_ID = re.compile(r'^[A-Za-z0-9]{8}$')
 FINAL_STATUSES = {'mate', 'resign', 'stalemate', 'timeout', 'draw', 'outoftime', 'cheat',
                   'noStart', 'unknownFinish', 'variantEnd', 'aborted'}
 USER_AGENT = 'ReinosDoXadrez/1.0 (GitHub Actions; public game reader)'
@@ -40,14 +41,21 @@ class GameNotFound(GameUnavailable):
     pass
 
 
+class GameAccessDenied(GameUnavailable):
+    """HTTP 401: sem acesso público ao recurso; não presume causa."""
+    pass
+
+
 class RateLimited(GameUnavailable):
     pass
 
 
 def parse_game_id(value):
-    """Aceita só link de partida do domínio Lichess; rejeita estudo e demais URLs.
+    """Aceita apenas links de partidas Lichess.
 
-    Não devolve links fornecidos para urllib; a URL da API será construída pelo ID.
+    URLs com 12 caracteres contêm 8 de ID público + 4 do token de acesso
+    do link privado. A API game/export aceita SOMENTE os 8 primeiros;
+    nunca encaminhar o token de 4 caracteres à API nem imprimi-lo no log.
     """
     if not isinstance(value, str) or not value.strip():
         return None
@@ -64,15 +72,15 @@ def parse_game_id(value):
             return None
         if len(segments) == 2 and segments[1] not in ('white', 'black'):
             return None
-        return segments[0]
+        return segments[0][:8]
     except ValueError:
         return None
 
 
 def fetch_public_game(game_id, *, opener=urlopen, pause=time.sleep, attempts=2, timeout=14):
     """Obtém JSON do endpoint oficial, uma requisição por vez; 429 espera 60s."""
-    if not GAME_ID.fullmatch(game_id):
-        raise ValueError('game id inválido')
+    if not PUBLIC_GAME_ID.fullmatch(game_id):
+        raise ValueError('game id público inválido: usar 8 caracteres')
     url = f'https://lichess.org/game/export/{quote(game_id, safe="")}?moves=true&opening=true&clocks=false&evals=false'
     request = Request(url, headers={'Accept': 'application/json', 'User-Agent': USER_AGENT})
     for attempt in range(attempts):
@@ -87,7 +95,9 @@ def fetch_public_game(game_id, *, opener=urlopen, pause=time.sleep, attempts=2, 
             return payload
         except HTTPError as exc:
             if exc.code == 404:
-                raise GameNotFound('HTTP 404: jogo não encontrado/publicamente acessível') from exc
+                raise GameNotFound('HTTP 404: partida não encontrada pela API pública; conferir link e ID') from exc
+            if exc.code == 401:
+                raise GameAccessDenied('HTTP 401: consulta não autorizada; verificar acesso à partida sem login') from exc
             if exc.code == 429:
                 if attempt + 1 < attempts:
                     print('Lichess jogos: HTTP 429 — aguardando 60 segundos antes de tentar novamente.')
@@ -128,7 +138,7 @@ def player_info(p):
 
 def normalize_game(data, *, checked_at):
     """Mantém campos úteis a #3, #4, #6 e #8 sem armazenar dados não públicos."""
-    if not isinstance(data, dict) or not GAME_ID.fullmatch(str(data.get('id', ''))):
+    if not isinstance(data, dict) or not PUBLIC_GAME_ID.fullmatch(str(data.get('id', ''))):
         raise GameUnavailable('JSON não contém ID de partida válido')
     players = data.get('players') if isinstance(data.get('players'), dict) else {}
     opening = data.get('opening') if isinstance(data.get('opening'), dict) else {}
@@ -215,6 +225,7 @@ def sync_games(data, *, cache=None, lookup=fetch_public_game, now=None, refresh_
         previous = cache.get(gid.lower(), {})
         game = previous.get('game') if isinstance(previous, dict) else None
         from_cache = cache_fresh(previous, now, refresh_active=refresh_active)
+        error_http_status = None
         if from_cache:
             status = 'cache'
             summary['cache'] += 1
@@ -228,6 +239,18 @@ def sync_games(data, *, cache=None, lookup=fetch_public_game, now=None, refresh_
                 cache[gid.lower()] = {'fetchedAt': stamp, 'game': game}
                 status = 'ok'
                 summary['consultados'] += 1
+            except GameAccessDenied as exc:
+                error_http_status = 401
+                summary['acesso_restrito'] += 1
+                status = 'desatualizado' if isinstance(game, dict) else 'acesso_restrito'
+                summary['indisponivel'] += 1
+                print(f'Lichess jogos: {gid}: {exc}', file=sys.stderr)
+            except GameNotFound as exc:
+                error_http_status = 404
+                summary['nao_encontrado'] += 1
+                status = 'desatualizado' if isinstance(game, dict) else 'nao_encontrado'
+                summary['indisponivel'] += 1
+                print(f'Lichess jogos: {gid}: {exc}', file=sys.stderr)
             except RateLimited as exc:
                 locked = True
                 status = 'desatualizado' if isinstance(game, dict) else 'indisponivel'
@@ -249,6 +272,8 @@ def sync_games(data, *, cache=None, lookup=fetch_public_game, now=None, refresh_
             else:
                 match.pop('lichessGame', None)
             match['lichessImport'] = {'status': status, 'checkedAt': stamp}
+            if error_http_status is not None:
+                match['lichessImport']['httpStatus'] = error_http_status
         print(f'Lichess jogos: {gid} — {status}')
 
     summary['links'] = len(matches)
@@ -258,7 +283,8 @@ def sync_games(data, *, cache=None, lookup=fetch_public_game, now=None, refresh_
     data['source']['lichessGamesSummary'] = dict(summary)
     print(f"Lichess jogos: {summary['links']} links, {summary['jogos_unicos']} jogos únicos, "
           f"{summary['consultados']} consultas, {summary['cache']} em cache, "
-          f"{summary['links_invalidos']} links inválidos, {summary['indisponivel']} indisponíveis.")
+          f"{summary['links_invalidos']} links inválidos, {summary['indisponivel']} indisponíveis "
+          f"({summary['acesso_restrito']} HTTP 401, {summary['nao_encontrado']} HTTP 404).")
     return dict(summary)
 
 

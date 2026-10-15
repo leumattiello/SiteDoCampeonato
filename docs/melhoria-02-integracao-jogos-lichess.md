@@ -64,3 +64,26 @@ O workflow `Publicar campeonato` foi ampliado com uma etapa **Consultar partidas
 - `createdAt` e `lastMoveAt` **não** são garantia das datas oficiais exatas de primeiro lance ou encerramento (#4).
 - Recursos adicionais de visualização de tabuleiro (#6) e estatísticas (#8) poderão consumir o JSON já consolidado.
 - A consulta real ainda depende de links válidos na coluna F. Até que existam, testes do endpoint são simulados (sem chamadas de rede).
+
+
+## Correção dos erros HTTP 401 e 404 (outubro/2026)
+
+- **Links de 12 caracteres:** o link de partida pode ter 8 caracteres públicos seguidos de 4 caracteres adicionais de acesso. O endpoint `GET /game/export/{gameId}` requer **8 caracteres**. A integração extrai os oito primeiros automaticamente, não altera a coluna F nem mostra os quatro caracteres extras nos logs. Ex.: `Ab12Cd34wxyz` → `Ab12Cd34`.
+- **HTTP 401:** a API recusou a consulta sem autorização; não significa necessariamente que o link da planilha esteja errado. O script registra `lichessImport.status = acesso_restrito` e `httpStatus = 401`. Confira se o link `https://lichess.org/game/export/<ID-PUBLICO-DE-8-CHARS>` abre sem login, em janela privada do navegador. Se não abrir, é necessário investigar acesso/visibilidade do jogo no Lichess. **Não adicionar token dos jogadores à planilha, ao código, ao JSON público ou ao repositório.**
+- **HTTP 404:** jogo não encontrado pela API para o ID consultado. O script registra `nao_encontrado` e `httpStatus = 404`. Após esta correção, links de 12 caracteres deixam de provocar requisições com ID incorreto. Outros casos de 404 exigem conferência do link.
+- **Cache e dados oficiais:** se houver jogo válido em cache, continua sendo preservado com `desatualizado`; o HTTP é acrescentado em `lichessImport.httpStatus` para diagnóstico. A consulta não altera resultados, Bye, status oficial nem classificações.
+- **Resumo:** mantém `indisponivel` para compatibilidade e acrescenta contagens `acesso_restrito` e `nao_encontrado`.
+
+Para publicar esta correção após a melhoria #2, extrair o ZIP na raiz do repositório e executar:
+
+```powershell
+git diff --check
+git status
+git add scripts/sync_lichess_games.py tests/test_sync_lichess_games.py docs/melhoria-02-integracao-jogos-lichess.md
+git commit -m "fix: corrigir IDs privados e diagnósticos da API Lichess"
+git push
+```
+
+**Validação:** GitHub Actions → Publicar campeonato → Run workflow, e verificar a etapa `Consultar partidas no Lichess (melhoria #2)`. Uma resposta HTTP 401 persistente não pode ser resolvida somente cortando o ID ou alterando o User-Agent; a causa precisa ser verificada no Lichess.
+
+Fontes: documentação oficial <https://lichess.org/api#tag/Games/operation/gamePgn> e <https://lichess.org/page/api-tips>.

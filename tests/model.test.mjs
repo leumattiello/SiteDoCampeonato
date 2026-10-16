@@ -59,3 +59,55 @@ test('Bloqueia URLs que não sejam do Lichess',()=>{
  assert.equal(validLichessUrl('https://evil.example/path'),null);
  assert.equal(validLichessUrl('https://lichess.org/abcdef'), 'https://lichess.org/abcdef');
 });
+
+test('API Lichess confirmada finaliza automaticamente e soma pontos sem tocar resultado manual',()=>{
+ const t=buildTournament({currentRound:4,matches:[
+   m(4,'Ana','Bia',null,'Jogador em outra partida',{lichessDecision:{status:'finished',result:'0-1'}}),
+   m(5,'Bia','Carlos',null,'Jogador em outra partida'),
+ ]});
+ assert.equal(t.finished.length,1);
+ assert.equal(t.matches[0].result,'0-1');
+ assert.equal(t.matches[0].derivedStatus,'finished');
+ assert.equal(t.standings.find(p=>p.name==='Bia').points,1);
+ assert.equal(t.matches[1].derivedStatus,'ready');
+});
+test('Partida iniciada no Lichess ocupa ambos os jogadores',()=>{
+ const t=buildTournament({currentRound:4,matches:[
+  m(4,'Ana','Bia',null,'Jogador em outra partida',{lichessDecision:{status:'playing'}}),
+  m(5,'Ana','Carlos'),m(5,'Bia','Dora'),m(5,'Carlos','Dora'),
+ ]});
+ assert.equal(t.ongoing.length,1);
+ assert.equal(t.matches[1].derivedStatus,'busy');
+ assert.equal(t.matches[2].derivedStatus,'busy');
+ assert.equal(t.matches[3].derivedStatus,'ready');
+});
+test('Resultado oficial da planilha vence um conflito com o Lichess',()=>{
+ const t=buildTournament({currentRound:3,matches:[m(1,'Ana','Bia','1-0','Finalizado',{
+  lichessDecision:{status:'conflito',reason:'placar_divergente',apiResult:'0-1'}
+ })]});
+ assert.equal(t.standings.find(p=>p.name==='Ana').points,1);
+ assert.equal(t.standings.find(p=>p.name==='Bia').points,0);
+ assert.equal(t.alerts.some(a=>a.includes('divergência')),true);
+});
+test('Sem decisão verificada não há pontuação por metadados crus da API',()=>{
+ const t=buildTournament({matches:[m(1,'Ana','Bia',null,'Jogador em outra partida',{
+  lichessGame:{status:'mate',winner:'white'},lichessImport:{status:'ok'}
+ })]});
+ assert.equal(t.finished.length,0);
+ assert.equal(t.standings.find(p=>p.name==='Ana').points,0);
+});
+test('Bye com zero ou meio ponto continua inalterado após integração',()=>{
+ const t=buildTournament({matches:[m(1,'Ana',null,'bye','Bye',{
+  byePoints:0.5,lichessDecision:{status:'finished',result:'1-0'}
+ })]});
+ assert.equal(t.standings[0].points,0.5);
+ assert.equal(t.standings[0].byes,1);
+ assert.equal(t.finished.length,0);
+});
+test('Decisão ignorada por diferença de cor não pontua o confronto',()=>{
+ const t=buildTournament({matches:[m(1,'Ana','Bia',null,'Jogador em outra partida',{
+  lichessDecision:{status:'ignorado',reason:'jogadores_ou_cores_divergentes'}
+ })]});
+ assert.equal(t.finished.length,0);
+ assert.equal(t.alerts.some(a=>a.includes('não aplicados')),true);
+});

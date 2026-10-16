@@ -91,3 +91,8 @@ Para testar a lógica, com Node.js instalado, execute `npm test`; para testar a 
 ## Atualizar a planilha manualmente
 
 Para sincronizar os resultados sem esperar a execução automática, no repositório GitHub acesse **Actions → Publicar campeonato → Run workflow**, selecione `main` e confirme. Quando a publicação terminar, atualize a página do site. Não existe botão administrativo no site; a atualização é controlada pelo GitHub Actions.
+
+
+### Melhoria #3 — Resultados e andamento pelo Lichess
+
+Após sincronizar Google Sheets, validar os nicks e consultar o Lichess, o Actions concilia placares e estado das partidas pelo script `scripts/resolve_lichess_results.py`. **A planilha continua soberana quando contém placar**, e o Bye continua sendo o valor da coluna B. Links com ID, jogadores ou cores divergentes nunca dão pontos. Consulte `docs/melhoria-03-resultados-status-automaticos.md` para critérios de aceitação e testes.

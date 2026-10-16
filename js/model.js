@@ -21,12 +21,17 @@ export function durationDays(m) {
 export function getResult(m){
   if (norm(m.status)==='bye' || m.result==='bye') return 'bye';
   if (['1-0','0-1','½-½','0.5-0.5','1/2-1/2'].includes(m.result)) return m.result.includes('½') || m.result.includes('0.5') || m.result.includes('1/2')?'½-½':m.result;
+  // Nunca transformar metadados Lichess brutos em pontos: somente decisões
+  // previamente verificadas pelo script Python (#3) podem gerar resultado.
+  const decision=m.lichessDecision;
+  if (decision?.status==='finished' && ['1-0','0-1','½-½'].includes(decision.result)) return decision.result;
   return null;
 }
 export function getMatchStatus(m, activeNames, referenceRound=1) {
   const result=getResult(m);
   if (result==='bye') return 'bye';
   if (result) return 'finished'; // Result overrides a stale manual status.
+  if (m.lichessDecision?.status==='playing') return 'playing';
   if (norm(m.status)==='em andamento') return 'playing';
   if (norm(m.status)==='finalizado') return 'missing-result';
   if (m.round>referenceRound+1) return 'future';
@@ -44,7 +49,7 @@ export function buildTournament(tournament){
   const source=tournament.matches || [];
   const matches=source.map((m,i)=>({...m,id:m.id || `r${m.round}-${i}`,result:getResult(m),round:Number(m.round)}));
   const activeNames=new Set();
-  for (const m of matches) if(!m.result && norm(m.status)==='em andamento' && m.black){ activeNames.add(m.white);activeNames.add(m.black); }
+  for (const m of matches) if(!m.result && (m.lichessDecision?.status==='playing' || norm(m.status)==='em andamento') && m.black){ activeNames.add(m.white);activeNames.add(m.black); }
   const currentRound=Number(tournament.currentRound)||1;
   const decorated=matches.map(m=>({...m,derivedStatus:getMatchStatus(m,activeNames,currentRound),duration:durationDays(m)}));
   const regular=decorated.filter(m=>m.derivedStatus!=='bye');
@@ -76,6 +81,8 @@ export function buildTournament(tournament){
   const playedIds=new Set();
   for(const m of ongoing)for(const n of [m.white,m.black]) {if(playedIds.has(n))alerts.push(`${n} aparece em duas partidas em andamento.`);playedIds.add(n);}
   for(const m of decorated) if(m.derivedStatus==='missing-result')alerts.push(`Rodada ${m.round}: status Finalizado sem placar informado.`);
+  for(const m of decorated) if(m.lichessDecision?.status==='conflito') alerts.push(`Rodada ${m.round}: ${m.white} × ${m.black} — divergência entre planilha e Lichess. Mantido resultado manual.`);
+  for(const m of decorated) if(m.lichessDecision?.status==='ignorado') alerts.push(`Rodada ${m.round}: ${m.white} × ${m.black} — dados Lichess não aplicados (${m.lichessDecision.reason}).`);
   return {...tournament,currentRound,matches:decorated,standings,finished,ongoing,ready,pending,recent,recentVerified:withDates.length>0,alerts,total:regular.length,byes:decorated.filter(m=>m.derivedStatus==='bye').length};
 }
 export function playerMatches(t,name){

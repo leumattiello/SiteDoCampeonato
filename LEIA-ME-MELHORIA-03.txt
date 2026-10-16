@@ -1,0 +1,1 @@
+Melhoria #3. Extraia este ZIP na raiz do repositorio GitHub, preservando as pastas. Execute os testes Python e JS, revise git diff e publique. Nao requer novo segredo: usa a autenticacao ja configurada na melhoria #2. Consulte docs/melhoria-03-resultados-status-automaticos.md.

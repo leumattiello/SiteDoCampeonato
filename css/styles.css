@@ -20,3 +20,6 @@
 .device-help strong{color:#3b4035}
 @media(max-width:420px){.device-toggle{display:flex;flex-wrap:wrap;width:100%}.device-toggle button{flex:1 1 140px}}
 
+
+/* Avisos da integração Lichess: discretos, legíveis e visíveis em telas móveis. */
+.lichess-warning{font-size:11px;font-weight:700;color:#864d23;background:#fff0d7;border:1px solid #e4c58f;border-radius:3px;padding:3px 7px;max-width:100%;overflow-wrap:anywhere}

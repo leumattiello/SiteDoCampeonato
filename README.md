@@ -96,7 +96,3 @@ Para sincronizar os resultados sem esperar a execução automática, no reposit�
 ### Melhoria #3 — Resultados e andamento pelo Lichess
 
 Após sincronizar Google Sheets, validar os nicks e consultar o Lichess, o Actions concilia placares e estado das partidas pelo script `scripts/resolve_lichess_results.py`. **A planilha continua soberana quando contém placar**, e o Bye continua sendo o valor da coluna B. Links com ID, jogadores ou cores divergentes nunca dão pontos. Consulte `docs/melhoria-03-resultados-status-automaticos.md` para critérios de aceitação e testes.
-
-## Melhoria #3 — escrever resultados de volta no Google Sheets
-
-A rotina `scripts/write_lichess_results_to_sheets.py` pode registrar na própria planilha resultados **já confirmados** pelo Lichess, respeitando placares manuais, jogadores, cores e Bye. **Inicialmente só simula** e nunca grava na planilha ao executar o workflow normal. Para preparar e testar gravação controlada em uma cópia, consulte [docs/melhoria-03-escrita-sheets.md](docs/melhoria-03-escrita-sheets.md).

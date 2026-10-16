@@ -3,24 +3,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      sheets_write_mode:
-        description: 'Escrita no Google Sheets (padrão SEM gravação)'
-        type: choice
-        required: true
-        default: dry-run
-        options:
-          - dry-run
-          - apply-backup
-          - apply-production
-      sheets_write_target_id:
-        description: 'ID da planilha de teste ou da original (somente ao gravar)'
-        type: string
-        required: false
-      sheets_write_confirm_target_id:
-        description: 'Repita exatamente o ID do destino para autorizar a gravação'
-        type: string
-        required: false
   schedule:
     - cron: '17 * * * *' # A cada hora, sem precisar de commit na planilha.
 
@@ -63,39 +45,6 @@ jobs:
           fi
       - name: Conciliar resultados e status Lichess (melhoria #3)
         run: python3 scripts/resolve_lichess_results.py
-      # A escrita não é habilitada automaticamente com a instalação do patch.
-      # A produção só pode ser modificada depois de habilitada por variável
-      # administrativa independente, e o agendamento exige segunda habilitação.
-      - name: Preparar cliente Google Sheets (apenas se gravação autorizada)
-        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.sheets_write_mode != 'dry-run') || (github.event_name == 'schedule' && vars.SHEETS_AUTO_WRITE_ENABLED == 'true' && vars.SHEETS_PRODUCTION_WRITE_ENABLED == 'true') }}
-        run: python3 -m pip install --quiet 'google-auth>=2,<4' 'requests>=2.31,<3'
-      - name: Simular ou registrar resultados no Google Sheets (melhoria #3)
-        # Eventualmente uma falha no writeback NÃO interrompe a atualização do site.
-        continue-on-error: true
-        env:
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          SHEETS_PRODUCTION_WRITE_ENABLED: ${{ vars.SHEETS_PRODUCTION_WRITE_ENABLED }}
-          SHEETS_AUTO_WRITE_ENABLED: ${{ vars.SHEETS_AUTO_WRITE_ENABLED }}
-          SHEETS_WRITE_MODE: ${{ inputs.sheets_write_mode || 'dry-run' }}
-          SHEETS_WRITE_TARGET_ID: ${{ inputs.sheets_write_target_id }}
-          SHEETS_WRITE_CONFIRM_TARGET_ID: ${{ inputs.sheets_write_confirm_target_id }}
-        run: |
-          args=(--mode "$SHEETS_WRITE_MODE")
-          if [ -n "$SHEETS_WRITE_TARGET_ID" ]; then
-            args+=(--target-id "$SHEETS_WRITE_TARGET_ID")
-          fi
-          if [ -n "$SHEETS_WRITE_CONFIRM_TARGET_ID" ]; then
-            args+=(--confirm-target-id "$SHEETS_WRITE_CONFIRM_TARGET_ID")
-          fi
-          python3 scripts/write_lichess_results_to_sheets.py "${args[@]}"
-      - name: Guardar auditoria da escrita ou simulação
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: sheets-write-audit-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .cache/sheets-write-audit.jsonl
-          if-no-files-found: ignore
-          retention-days: 14
       - name: Preparar arquivos públicos
         run: |
           mkdir -p _site/css _site/js _site/data

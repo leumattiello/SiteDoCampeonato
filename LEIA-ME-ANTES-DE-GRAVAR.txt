@@ -1,0 +1,1 @@
+Melhoria #3: gravação protegida no Google Sheets. Modo padrão: dry-run SEM escrita. Leia docs/melhoria-03-escrita-sheets.md.

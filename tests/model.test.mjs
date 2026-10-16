@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore} from '../js/model.js';
+import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate} from '../js/model.js';
 
 const m=(round,white,black,result=null,status='Jogador em outra partida',extra={})=>({round,white,black,result,status,...extra});
 test('Resultado final substitui status antigo de em andamento',()=>{
@@ -110,4 +110,57 @@ test('Decisão ignorada por diferença de cor não pontua o confronto',()=>{
  })]});
  assert.equal(t.finished.length,0);
  assert.equal(t.alerts.some(a=>a.includes('não aplicados')),true);
+});
+
+
+const verifiedDateGame = (createdAt,lastMoveAt,status='mate')=>({
+ lichessImport:{status:'ok'},lichessDecision:{status:'manual',reason:'planilha_prevalece'},
+ lichessGame:{status,winner:status==='mate'?'white':null,createdAt,lastMoveAt,id:'Ab12Cd34'},
+ url:'https://lichess.org/Ab12Cd34'
+});
+
+test('#4 G/H da planilha prevalecem sobre datas distintas da API',()=>{
+ const verified=verifiedDateGame('2026-10-09T23:00:00+00:00','2026-10-14T03:00:00+00:00');
+ const t=buildTournament({currentRound:1,matches:[m(1,'Ana','Bia','1-0','Finalizado',{...verified,start:'2026-10-01',end:'2026-10-02'})]});
+ assert.equal(t.matches[0].start,'2026-10-01');assert.equal(t.matches[0].end,'2026-10-02');
+ assert.equal(t.matches[0].duration,1);
+ assert.deepEqual(t.matches[0].datesFromLichess,{start:false,end:false});
+});
+
+test('#4 sem G/H exibe datas da API somente com decisões verificadas da #3',()=>{
+ const verified=verifiedDateGame('2026-10-10T01:30:00+00:00','2026-10-12T03:15:00+00:00');
+ const t=buildTournament({currentRound:1,matches:[m(1,'Ana','Bia','1-0','Finalizado',{...verified})]});
+ assert.equal(t.matches[0].start,'2026-10-09');assert.equal(t.matches[0].end,'2026-10-12');
+ assert.equal(t.matches[0].duration,3);
+ assert.deepEqual(t.matches[0].datesFromLichess,{start:true,end:true});
+ const noDecision=m(1,'Ana','Bia','1-0','Finalizado',{...verified,lichessDecision:undefined});
+ assert.equal(buildTournament({matches:[noDecision]}).matches[0].end,null);
+});
+
+test('#4 jogo iniciado fornece somente G, e desafios created/aborted não fornecem datas',()=>{
+ const started=verifiedDateGame('2026-10-09T23:00:00+00:00','2026-10-14T03:00:00+00:00','started');
+ started.lichessDecision={status:'playing'};
+ const t=buildTournament({matches:[m(1,'Ana','Bia',null,'Em andamento',started)]});
+ assert.equal(t.matches[0].start,'2026-10-09');assert.equal(t.matches[0].end,null);
+ for(const status of ['created','aborted','noStart']){
+  const v=verifiedDateGame('2026-10-09T23:00:00+00:00','2026-10-14T03:00:00+00:00',status);
+  assert.equal(resolveMatchDates(m(1,'Ana','Bia',null,'Em andamento',v)).start,null);
+ }
+});
+
+test('#4 lista exatamente as 5 finalizadas com data mais recente em ordem cronológica',()=>{
+ const dates=['2026-10-10','2026-10-08','2026-10-11','2026-10-07','2026-10-06','2026-10-12','2026-10-09'];
+ const games=dates.map((end,i)=>m(i+1,'Ana','Bia','1-0','Finalizado',{end,start:'2026-10-01'}));
+ const t=buildTournament({matches:games});
+ assert.deepEqual(t.recent.map(x=>x.end),['2026-10-12','2026-10-11','2026-10-10','2026-10-09','2026-10-08']);
+});
+
+test('#4 dias e fuso de São Paulo, ausência segura de timestamps e Bye intacto',()=>{
+ assert.equal(lichessLocalDate('2026-10-10T01:30:00+00:00'),'2026-10-09');
+ assert.equal(lichessLocalDate('não é timestamp'),null);
+ const t=buildTournament({matches:[m(1,'Ana',null,'bye','Bye',{
+   byePoints:0.5,...verifiedDateGame('2026-10-10T01:30:00+00:00','2026-10-12T03:15:00+00:00')
+ })]});
+ assert.equal(t.matches[0].start,undefined);
+ assert.equal(t.standings[0].points,0.5);
 });

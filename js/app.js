@@ -49,7 +49,7 @@ function drawMyBattle(){
 }
 function drawLeaders(){byId('leaderboard-preview').innerHTML=current.standings.slice(0,5).map((p,i)=>`<div class="leader-row"><span class="rank ${['first','second','third'][i]||''}">${i+1}º</span>${flagSmall(p.name,i===0)}<div class="leader-name">${s(p.name)}<small>${nickFor(p.name)?s(nickFor(p.name)):`${p.wins} vitória${p.wins===1?'':'s'}`}</small></div><span class="leader-points">${number(p.points)} <small>pts</small></span></div>`).join('');}
 function drawRecent(){
-  byId('recent-notice').textContent=current.recentVerified?'Ordenadas por data de encerramento.':'Datas de término ainda não informadas: exibindo as últimas linhas finalizadas da planilha, sem ordem cronológica garantida.';
+  byId('recent-notice').textContent=current.recentVerified?'Ordenadas pela data de fim. Datas automáticas do Lichess são referências de criação e último lance, não instantes exatos.':'Datas de término ainda não informadas: exibindo as últimas linhas finalizadas da planilha, sem ordem cronológica garantida.';
   byId('recent-matches').innerHTML=current.recent.length?current.recent.map(m=>`<div class="recent-row"><span class="recent-icon">♟</span><div><div class="recent-title">${s(m.white)} <span class="fixture-vs">×</span> ${s(m.black)}</div><span class="recent-sub">Rodada ${m.round} · ${m.end?dateText(m.end):'Data pendente'}${m.duration!==null?` · ${m.duration} dias`:''}</span>${urlAnchor(m,'Assistir à partida ↗','match-action')}</div><div class="result-score">${s(m.result)}</div></div>`).join(''):`<div class="empty-message">As partidas concluídas aparecerão aqui.</div>`;
 }
 function drawGlory(){

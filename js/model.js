@@ -13,6 +13,44 @@ export function parseDate(input) {
   if (dt.getUTCFullYear()!==bits[0] || dt.getUTCMonth()+1!==bits[1] || dt.getUTCDate()!==bits[2]) return null;
   return dt;
 }
+// A aba 2 usa fuso America/Sao_Paulo. Timestamp Lichess representa
+// criação/último lance: data estimativa, NÃO instante preciso de início/fim.
+export function lichessLocalDate(input) {
+  if (typeof input !== 'string' || !/^\d{4}-\d\d-\d\dT/.test(input)) return null;
+  const date = new Date(input);
+  if (!Number.isFinite(date.getTime())) return null;
+  if (date.getTime() > Date.now()+86400000) return null;
+  const parts = new Intl.DateTimeFormat('en-US',{
+    timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function verifiedLichessDates(m) {
+  // Decisão validada da #3 prova o par e as cores. Metadados isolados NÃO bastam.
+  const decision=m.lichessDecision?.status;
+  const allowed=['playing','finished','manual','conflito'].includes(decision)
+    && ['ok','cache'].includes(m.lichessImport?.status);
+  const game=m.lichessGame;
+  if (!allowed || !game || !m.url) return {start:null,end:null};
+  const status=String(game.status||'').toLowerCase();
+  const finished=['mate','resign','timeout','outoftime','draw','stalemate','cheat','variantend','unknownfinish'].includes(status)
+    && (game.winner==='white'||game.winner==='black'||(['draw','stalemate'].includes(status)&&!game.winner));
+  const started=status==='started'||finished;
+  const start=started?lichessLocalDate(game.createdAt):null;
+  const end=finished?lichessLocalDate(game.lastMoveAt):null;
+  return {start,end:start&&end&&end<start?null:end};
+}
+
+export function resolveMatchDates(m) {
+  if (getResult(m)==='bye' || norm(m.status)==='bye') return {...m};
+  const dates=verifiedLichessDates(m);
+  const start=parseDate(m.start)?m.start:(!m.start?dates.start:m.start);
+  const end=parseDate(m.end)?m.end:(!m.end?dates.end:m.end);
+  return {...m,start,end,datesFromLichess:{start:!m.start&&!!dates.start,end:!m.end&&!!dates.end}};
+}
+
 export function durationDays(m) {
   const start=parseDate(m.start), end=parseDate(m.end);
   if (!start || !end || end<start) return null;
@@ -47,7 +85,7 @@ export function byeScore(value) {
 }
 export function buildTournament(tournament){
   const source=tournament.matches || [];
-  const matches=source.map((m,i)=>({...m,id:m.id || `r${m.round}-${i}`,result:getResult(m),round:Number(m.round)}));
+  const matches=source.map((m,i)=>resolveMatchDates({...m,id:m.id || `r${m.round}-${i}`,result:getResult(m),round:Number(m.round)}));
   const activeNames=new Set();
   for (const m of matches) if(!m.result && (m.lichessDecision?.status==='playing' || norm(m.status)==='em andamento') && m.black){ activeNames.add(m.white);activeNames.add(m.black); }
   const currentRound=Number(tournament.currentRound)||1;

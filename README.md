@@ -80,7 +80,7 @@ Para testar a lógica, com Node.js instalado, execute `npm test`; para testar a 
 
 ## Limites e próximos ajustes
 
-- Site não cria partidas no Lichess nem modifica a planilha. Todos os jogadores acessam sem senha; nomes e resultados são públicos.
+- O site e o GitHub Actions não criam partidas nem modificam a planilha; o Apps Script vinculado pode preencher placares e datas quando autorizado. Todos os jogadores acessam sem senha; nomes e resultados são públicos.
 - A Academia tem apenas dois tutoriais: criar partida e aceitar desafio. A opção “Estou no computador” também pode ser usada no Chrome, Firefox ou outro navegador do celular; os botões podem aparecer em lugares diferentes. **Capturas reais do Lichess devem ser adicionadas e verificadas** depois com as versões de aplicativo/navegador efetivamente usadas pelo grupo. O conteúdo não deve fingir ter telas ainda não produzidas.
 - Critério de desempate oficial não foi definido. A classificação usa pontos, vitórias e nome apenas como ordenação de exibição; isso não é um regulamento de desempate.
 - As datas do Google podem vir formatadas segundo a localidade da planilha. Recomenda-se `dd/mm/aaaa` para G e H.
@@ -96,3 +96,10 @@ Para sincronizar os resultados sem esperar a execução automática, no reposit�
 ### Melhoria #3 — Resultados e andamento pelo Lichess
 
 Após sincronizar Google Sheets, validar os nicks e consultar o Lichess, o Actions concilia placares e estado das partidas pelo script `scripts/resolve_lichess_results.py`. **A planilha continua soberana quando contém placar**, e o Bye continua sendo o valor da coluna B. Links com ID, jogadores ou cores divergentes nunca dão pontos. Consulte `docs/melhoria-03-resultados-status-automaticos.md` para critérios de aceitação e testes.
+
+
+### Melhoria #4 — Datas verificadas no Lichess
+
+O Apps Script da #3 foi ampliado para preencher **G (Data Início)** e **H (Data Fim)** da aba `2`, preservando integralmente as datas que já existirem. Ele só considera o jogo se o ID, os dois jogadores e as cores forem confirmados no Lichess. A data de **G** usa `createdAt` (criação da partida, não necessariamente primeiro lance); **H** usa `lastMoveAt` (último lance, não necessariamente instante de encerramento) e só é gravada para partidas com resultado final verificável. Os valores são exibidos em `dd/MM/yyyy`, no fuso da planilha (atualmente `America/Sao_Paulo`), e auditados em `_AuditoriaDatasLichess`.
+
+O site já calculava duração em dias corridos e apresentava até cinco partidas recentes. Agora, caso G/H ainda estejam vazias, o site pode usar as datas importadas pela API do Lichess **somente após a validação da melhoria #3**. As datas digitadas na planilha sempre prevalecem. Consulte [`docs/melhoria-04-datas-lichess.md`](docs/melhoria-04-datas-lichess.md) para atualizar o Apps Script e executar testes seguros.

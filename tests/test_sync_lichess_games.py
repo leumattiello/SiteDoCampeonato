@@ -230,6 +230,77 @@ class GameSyncTest(unittest.TestCase):
         self.assertEqual(result['id'], 'aB12cD34')
         self.assertEqual(waits, [60])
 
+    def test_fetch_anonymous_has_no_authorization_header(self):
+        calls = []
+
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self, *_): pass
+            def read(self, *_): return json.dumps(game()).encode()
+
+        def opener(request, **kw):
+            calls.append(request)
+            return Response()
+
+        fetch_public_game('aB12cD34', opener=opener)
+        self.assertIsNone(calls[0].get_header('Authorization'))
+        self.assertEqual(calls[0].get_header('Accept'), 'application/json')
+
+    def test_fetch_auth_uses_bearer_only_in_request_header(self):
+        calls = []
+        secret = 'lip_do_not_print_this_secret'
+
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self, *_): pass
+            def read(self, *_): return json.dumps(game()).encode()
+
+        def opener(request, **kw):
+            calls.append(request)
+            return Response()
+
+        with redirect_stdout(io.StringIO()) as out, redirect_stderr(io.StringIO()) as err:
+            result = fetch_public_game('aB12cD34', token=secret, opener=opener)
+        self.assertEqual(result['id'], 'aB12cD34')
+        self.assertEqual(calls[0].get_header('Authorization'), f'Bearer {secret}')
+        self.assertNotIn(secret, calls[0].full_url)
+        self.assertNotIn(secret, out.getvalue() + err.getvalue())
+
+    def test_http_401_auth_message_is_safe(self):
+        secret = 'lip_do_not_print_this_secret'
+
+        def deny(request, **kw):
+            raise HTTPError(request.full_url, 401, 'Unauthorized', {}, None)
+
+        with self.assertRaises(GameAccessDenied) as error:
+            fetch_public_game('aB12cD34', token=secret, opener=deny)
+        self.assertIn('conferir validade', str(error.exception))
+        self.assertNotIn(secret, str(error.exception))
+        with self.assertRaises(GameAccessDenied) as without:
+            fetch_public_game('aB12cD34', opener=deny)
+        self.assertIn('configurar segredo', str(without.exception))
+
+    def test_bad_token_does_not_get_sent(self):
+        with self.assertRaises(ValueError):
+            fetch_public_game('aB12cD34', token='token\nleak', opener=lambda *_a, **_kw: self.fail('não chamar'))
+
+    def test_main_reads_optional_token_from_environment(self):
+        data = fixture(url='https://lichess.org/aB12cD34')
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp) / 'site.json'
+            c = Path(temp) / 'cache.json'
+            p.write_text(json.dumps(data), encoding='utf8')
+            fake_game = game(id='aB12cD34', status='mate')
+            with patch.dict('os.environ', {'LICHESS_API_TOKEN': 'lip_dummy'}):
+                with patch('scripts.sync_lichess_games.fetch_public_game', return_value=fake_game) as call:
+                    with redirect_stdout(io.StringIO()) as out:
+                        self.assertEqual(main(['--file', str(p), '--cache', str(c)]), 0)
+            self.assertEqual(call.call_args.kwargs['token'], 'lip_dummy')
+            self.assertNotIn('lip_dummy', out.getvalue())
+            self.assertNotIn('lip_dummy', p.read_text(encoding='utf8'))
+            self.assertNotIn('lip_dummy', c.read_text(encoding='utf8'))
+            self.assertIn('tentativas', out.getvalue())
+
     def test_mismatched_response_id_rejected(self):
         class FakeResponse:
             def __enter__(self): return self

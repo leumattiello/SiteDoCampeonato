@@ -35,6 +35,8 @@ jobs:
           restore-keys: |
             lichess-public-games-${{ runner.os }}-
       - name: Consultar partidas no Lichess (melhoria #2)
+        env:
+          LICHESS_API_TOKEN: ${{ secrets.LICHESS_API_TOKEN }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             python3 scripts/sync_lichess_games.py --refresh-active

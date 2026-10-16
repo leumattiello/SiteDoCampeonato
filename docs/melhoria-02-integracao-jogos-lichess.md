@@ -87,3 +87,28 @@ git push
 **Validação:** GitHub Actions → Publicar campeonato → Run workflow, e verificar a etapa `Consultar partidas no Lichess (melhoria #2)`. Uma resposta HTTP 401 persistente não pode ser resolvida somente cortando o ID ou alterando o User-Agent; a causa precisa ser verificada no Lichess.
 
 Fontes: documentação oficial <https://lichess.org/api#tag/Games/operation/gamePgn> e <https://lichess.org/page/api-tips>.
+
+## Complemento: autenticação opcional para exportar partidas que exigem login
+
+Em outubro de 2026, algumas partidas que abrem normalmente em janela privativa retornaram **HTTP 401** no endpoint de exportação sem autenticação. O código-fonte do Lichess em `app/controllers/Game.scala` usa `RequireAuthIf(!game.isStrongOrRecent)` ao exportar uma partida, isto é, algumas exportações exigem um usuário autenticado mesmo quando o tabuleiro é visível publicamente. Fonte: <https://github.com/lichess-org/lila/blob/master/app/controllers/Game.scala>.
+
+Para resolver com segurança, a rotina agora aceita um **token pessoal opcional** de Lichess na variável de ambiente `LICHESS_API_TOKEN`, repassada somente à etapa de exportação do workflow via GitHub Actions Secret. Envia `Authorization: Bearer …` por HTTPS, sem expor o segredo em URLs, JSON publicado, cache, arquivos ou logs. Sem segredo, a consulta anônima anterior continua funcionando.
+
+### Configurar
+
+1. Entre na sua conta Lichess e abra <https://lichess.org/account/oauth/token>. Crie um token com um nome sugestivo (por exemplo, `reinos-site-leitura`). **Não selecione escopos de escrita**, como `board:play`, `challenge:write`, `msg:write`. Para o primeiro teste, crie o token **sem selecionar escopos adicionais**, se o formulário permitir: a exportação de jogos não exige permissões OAuth especiais, somente identificação em determinadas condições. Caso o formulário não permita token sem escopos, pare e revise antes de autorizar permissões extras.
+2. Não cole nem envie o token a outras pessoas, à planilha ou ao ChatGPT. Copie-o diretamente na interface do GitHub: repositório → **Settings → Secrets and variables → Actions → New repository secret**. Nome: `LICHESS_API_TOKEN`; valor: o token completo. Clique **Add secret**.
+3. Extraia o ZIP de correção na raiz do repositório já atualizado e publique via commit/push. Confirme que a execução está usando o novo workflow.
+4. Execute **Actions → Publicar campeonato → Run workflow**, escolha a branch principal e confira a etapa **Consultar partidas no Lichess**. O primeiro log deve dizer `autenticação habilitada (GitHub Secret)` — sem mostrar valor.
+5. Confirme que os 12 jogos antes negados passaram de `HTTP 401` a `ok` ou `cache`. Os campos `lichessGame`/`lichessImport` deverão aparecer em `data/campeonatos.json` gerado, nunca com o token. Não é preciso alterar a planilha nem os jogadores.
+6. Se aparecer **HTTP 401 mesmo autenticado**, verifique se o secret foi criado no repositório correto, com o nome exato e sem espaços, e se o token continua ativo no Lichess. Tokens não concedem direitos sobre dados privados alheios. Caso persistam erros, capturar somente status e headers não confidenciais, sem expor o token.
+
+### Segurança e comportamento
+
+- O token é opcional e só é lido de `os.environ`, nunca de parâmetro de linha de comando ou JavaScript. O token só é transmitido ao domínio `lichess.org` no cabeçalho de requisição HTTPS.
+- Sem alterações nas abas da planilha, classificação, pontos de Bye, nomes, status oficial ou links.
+- Um `401` não interrompe a publicação do site; registra `acesso_restrito` e respeita cache anterior.
+- O resumo agora diferencia `tentativas` (HTTP efetuadas) e `consultados` (sucessos), para evitar interpretar `0 consultas` como zero tentativas.
+- Se revogar o token, as exportações que requerem autenticação podem voltar a `401`, mas o site continuará funcionando.
+
+Referências: <https://lichess.org/api> e <https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets>.

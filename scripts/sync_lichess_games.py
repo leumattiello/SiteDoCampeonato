@@ -13,6 +13,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from http.client import HTTPException
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -77,12 +78,20 @@ def parse_game_id(value):
         return None
 
 
-def fetch_public_game(game_id, *, opener=urlopen, pause=time.sleep, attempts=2, timeout=14):
-    """Obtém JSON do endpoint oficial, uma requisição por vez; 429 espera 60s."""
+def fetch_public_game(game_id, *, token=None, opener=urlopen, pause=time.sleep, attempts=2, timeout=14):
+    """Obtém JSON de um jogo; se fornecido, autentica com token via Bearer.
+
+    O token jamais entra na URL, no arquivo JSON, no cache ou nos logs.
+    """
     if not PUBLIC_GAME_ID.fullmatch(game_id):
         raise ValueError('game id público inválido: usar 8 caracteres')
     url = f'https://lichess.org/game/export/{quote(game_id, safe="")}?moves=true&opening=true&clocks=false&evals=false'
-    request = Request(url, headers={'Accept': 'application/json', 'User-Agent': USER_AGENT})
+    headers = {'Accept': 'application/json', 'User-Agent': USER_AGENT}
+    if token:
+        if any(ch in token for ch in ('\r', '\n')):
+            raise ValueError('token de API inválido')
+        headers['Authorization'] = f'Bearer {token}'
+    request = Request(url, headers=headers)
     for attempt in range(attempts):
         try:
             with opener(request, timeout=timeout) as response:
@@ -97,7 +106,9 @@ def fetch_public_game(game_id, *, opener=urlopen, pause=time.sleep, attempts=2, 
             if exc.code == 404:
                 raise GameNotFound('HTTP 404: partida não encontrada pela API pública; conferir link e ID') from exc
             if exc.code == 401:
-                raise GameAccessDenied('HTTP 401: consulta não autorizada; verificar acesso à partida sem login') from exc
+                advice = ('conferir validade do segredo LICHESS_API_TOKEN e autenticação no Lichess'
+                          if token else 'pode exigir login; configurar segredo LICHESS_API_TOKEN no GitHub')
+                raise GameAccessDenied(f'HTTP 401: acesso negado; {advice}') from exc
             if exc.code == 429:
                 if attempt + 1 < attempts:
                     print('Lichess jogos: HTTP 429 — aguardando 60 segundos antes de tentar novamente.')
@@ -233,6 +244,7 @@ def sync_games(data, *, cache=None, lookup=fetch_public_game, now=None, refresh_
             status = 'desatualizado' if isinstance(game, dict) else 'indisponivel'
             summary['indisponivel'] += 1
         else:
+            summary['tentativas'] += 1
             try:
                 payload = lookup(gid)
                 game = normalize_game(payload, checked_at=stamp)
@@ -282,7 +294,7 @@ def sync_games(data, *, cache=None, lookup=fetch_public_game, now=None, refresh_
     data.setdefault('source', {})['lichessGamesCheckedAt'] = stamp
     data['source']['lichessGamesSummary'] = dict(summary)
     print(f"Lichess jogos: {summary['links']} links, {summary['jogos_unicos']} jogos únicos, "
-          f"{summary['consultados']} consultas, {summary['cache']} em cache, "
+          f"{summary['tentativas']} tentativas, {summary['consultados']} sucessos, {summary['cache']} em cache, "
           f"{summary['links_invalidos']} links inválidos, {summary['indisponivel']} indisponíveis "
           f"({summary['acesso_restrito']} HTTP 401, {summary['nao_encontrado']} HTTP 404).")
     return dict(summary)
@@ -301,10 +313,17 @@ def main(argv=None):
     parser.add_argument('--cache', type=Path, default=DEFAULT_CACHE)
     parser.add_argument('--refresh-active', action='store_true', help='Ignora TTL para jogos não encerrados')
     args = parser.parse_args(argv)
+    token = os.environ.get('LICHESS_API_TOKEN', '').strip()
     try:
+        if any(ch in token for ch in ('\r', '\n')):
+            raise ValueError('LICHESS_API_TOKEN contém quebra de linha')
+        print('Lichess jogos: autenticação ' + ('habilitada (GitHub Secret)' if token else 'não configurada (anônimo)'))
         data = json.loads(args.file.read_text(encoding='utf-8'))
         cache = load_cache(args.cache)
-        sync_games(data, cache=cache, refresh_active=args.refresh_active)
+        def lookup(game_id):
+            return fetch_public_game(game_id, token=token or None)
+
+        sync_games(data, cache=cache, lookup=lookup, refresh_active=args.refresh_active)
         # Salvar antes de anunciar sucesso; artefato Pages é só dado derivado.
         args.file.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         persist_cache(args.cache, cache)

@@ -1,23 +1,26 @@
-Correção da melhoria #2: identificadores Lichess de 12 caracteres + erros HTTP 401/404
+REINOS DO XADREZ - CORREÇÃO DA MELHORIA #2 (HTTP 401 / AUTENTICAÇÃO)
 
-Arquivos do pacote:
-  scripts/sync_lichess_games.py
-  tests/test_sync_lichess_games.py
-  docs/melhoria-02-integracao-jogos-lichess.md
+Este ZIP é um PATCH (não é o projeto completo). Extraia na raiz do repositório que já tem as melhorias #1 e #2 e a correção anterior dos IDs.
 
-Extraia na RAIZ do repositório Reinos do Xadrez, mantendo as pastas.
-Não precisa modificar a planilha nem cadastrar token Lichess.
+MUDANÇAS
+- .github/workflows/pages.yml: passa LICHESS_API_TOKEN somente ao passo de exportação de jogos Lichess
+- scripts/sync_lichess_games.py: suporta Bearer token opcional, sem imprimir nem persistir o valor
+- tests/test_sync_lichess_games.py: testes de autenticação e confidencialidade
+- docs/melhoria-02-integracao-jogos-lichess.md: procedimento e diagnóstico
 
-Comandos no PowerShell (na pasta do repositório):
-  Expand-Archive -Path "$HOME\Downloads\reinos-do-xadrez-correcao-lichess-401-404.zip" -DestinationPath . -Force
-  git diff --check
-  git status
-  git add scripts/sync_lichess_games.py tests/test_sync_lichess_games.py docs/melhoria-02-integracao-jogos-lichess.md
-  git commit -m "fix: corrigir ids privados e diagnosticos Lichess"
-  git push
+CONFIGURAÇÃO MANUAL NECESSÁRIA (NÃO INFORMAR O TOKEN AO CHATGPT)
+1. Criar um token pessoal no endereço https://lichess.org/account/oauth/token com nenhum escopo extra, se possível.
+2. No repositório Github: Settings -> Secrets and variables -> Actions -> New repository secret.
+3. Nome exato: LICHESS_API_TOKEN; valor: token completo. Não usar Variables, e não incluir no Git.
+4. Extrair ZIP e publicar commit/push.
+5. Actions -> Publicar campeonato -> Run workflow; verificar 'autenticação habilitada' e redução dos HTTP 401.
 
-GitHub -> Actions -> Publicar campeonato -> Run workflow.
+POWER SHELL, NA PASTA DO REPOSITÓRIO:
+Expand-Archive -Path "$HOME\Downloads\reinos-do-xadrez-lichess-autenticacao.zip" -DestinationPath . -Force
+git diff --check
+git status
+git add .github/workflows/pages.yml scripts/sync_lichess_games.py tests/test_sync_lichess_games.py docs/melhoria-02-integracao-jogos-lichess.md
+git commit -m "fix: autenticar exportacao Lichess com GitHub Secret"
+git push
 
-Nota: 12 caracteres -> primeiros 8 para o endpoint /game/export.
-      HTTP 401 não implica erro do link e não é corrigido automaticamente.
-      Verificar via navegador em janela privada, sem iniciar sessão.
+O token NÃO deve constar no ZIP, no Git, na planilha ou em código JavaScript.

@@ -1,0 +1,110 @@
+name: Validar e pré-visualizar PR
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+permissions:
+  contents: read
+concurrency:
+  group: previa-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validar:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testes Python
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Testes JavaScript
+        run: npm test
+      - name: Checar sintaxe do site
+        run: |
+          node --check js/model.js
+          node --check js/app.js
+      - name: Atualizar dados publicos da planilha
+        run: python scripts/sync_google_sheets.py --strict
+      - name: Consultar perfis e rating de correspondencia
+        run: python scripts/validate_lichess_players.py
+      # Sem segredo LICHESS_API_TOKEN em codigo de PR.
+      - name: Preparar site de teste
+        run: |
+          mkdir -p _preview/css _preview/js _preview/data
+          cp index.html _preview/
+          cp css/styles.css _preview/css/
+          cp js/*.js _preview/js/
+          cp data/campeonatos.json _preview/data/
+      - name: Resumo dos ratings consultados
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          from pathlib import Path
+          d=json.loads(Path('_preview/data/campeonatos.json').read_text(encoding='utf-8'))
+          n=os.environ['PR_NUMBER']
+          print(f'## Resultados do PR #{n}\n')
+          print('Testes concluidos e dados publicos importados. A producao nao foi alterada.\n')
+          print('### Ratings de correspondencia\n')
+          print('| Jogador | Nick | Rating |')
+          print('|---|---|---|')
+          for p in sorted(d.get('players', []), key=lambda x:str(x.get('name','')).casefold()):
+              rating=p.get('lichessCorrespondence') or {}
+              v=(str(rating['rating'])+('?' if rating.get('provisional') else '')) if rating.get('status')=='disponivel' and isinstance(rating.get('rating'),int) else '—'
+              print(f"| {str(p.get('name') or '—').replace('|','/')} | {str(p.get('lichess') or '—').replace('|','/')} | {v} |")
+          print('\n? = rating provisório; — = indisponível.')
+          PY
+      - name: Guardar site em artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-previa-pr-${{ github.event.pull_request.number }}
+          path: _preview/
+          retention-days: 14
+          if-no-files-found: error
+  publicar:
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: validar
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site-previa-pr-${{ github.event.pull_request.number }}
+          path: _preview/
+      - name: Publicar SOMENTE em branch de preview isolada
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: pr-preview-${{ github.event.pull_request.number }}
+          publish_dir: ./_preview
+          force_orphan: true
+      - name: Exibir link da previa
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo '## Abrir previa navegavel' >> "$GITHUB_STEP_SUMMARY"
+          echo "[Visualizar PR #${PR_NUMBER}](https://raw.githack.com/leumattiello/SiteDoCampeonato/pr-preview-${PR_NUMBER}/index.html)" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Servico gratuito externo, com cache e possivel confirmacao de acesso; nao e o GitHub Pages oficial.' >> "$GITHUB_STEP_SUMMARY"
+  limpar:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Apagar branch de preview ao fechar PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/pr-preview-${PR_NUMBER}" >/dev/null 2>&1; then
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/pr-preview-${PR_NUMBER}"
+          fi

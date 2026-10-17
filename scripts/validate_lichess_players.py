@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Valida o nick Lichess de cada participante do torneio atual (melhoria #1).
+"""Valida nicks e importa rating público de correspondência (#1 e #5).
 
 Executado APÓS a importação do Google Sheets, durante GitHub Actions.
 Consulta somente perfis públicos. Nunca edita o Google Sheets; nunca precisa de token.
@@ -60,6 +60,21 @@ def get_public_profile(nick, *, request_timeout=12, attempts=2, wait=time.sleep)
     raise ProfileUnavailable("número máximo de tentativas")
 
 
+def correspondence_rating(profile, checked_at):
+    """Lê somente perfs.correspondence; nenhum fallback para outras modalidades."""
+    perf = profile.get("perfs") if isinstance(profile.get("perfs"), dict) else {}
+    corr = perf.get("correspondence") if isinstance(perf.get("correspondence"), dict) else {}
+    rating = corr.get("rating")
+    result = {"status": "indisponivel", "checkedAt": checked_at}
+    if not isinstance(rating, int) or isinstance(rating, bool) or not 100 <= rating <= 5000:
+        return result
+    result.update({"status": "disponivel", "rating": rating, "provisional": corr.get("prov") is True})
+    games = corr.get("games")
+    if isinstance(games, int) and not isinstance(games, bool) and games >= 0:
+        result["games"] = games
+    return result
+
+
 def active_participant_names(data):
     """Limita a verificação à edição atual, evitando perfis de edições passadas."""
     names = set()
@@ -74,7 +89,7 @@ def active_participant_names(data):
 
 
 def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=time.sleep):
-    """Altera apenas metadados lichessValidation dos jogadores, preservando nicks e jogos."""
+    """Altera apenas metadados Lichess nos jogadores, preservando nicks e jogos."""
     stamp = checked_at or datetime.now(timezone.utc).isoformat(timespec="seconds")
     players = data.get("players", [])
     names = active_participant_names(data)
@@ -95,6 +110,8 @@ def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=ti
         player = players_by_name[name]
         nick = str(player.get("lichess") or "").strip()
         status = None
+        # Apaga rating da execução anterior quando o perfil deixa de ser válido.
+        player["lichessCorrespondence"] = {"status": "indisponivel", "checkedAt": stamp}
         if not nick:
             status = {"status": "ausente"}
         elif not VALID_NICK.fullmatch(nick):
@@ -112,6 +129,7 @@ def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=ti
                 else:
                     status = {"status": "valido", "username": canonical,
                               "id": user_id.casefold(), "url": f"https://lichess.org/@/{quote(canonical)}"}
+                    player["lichessCorrespondence"] = correspondence_rating(profile, stamp)
             except NickNotFound:
                 status = {"status": "invalido", "motivo": "perfil_nao_encontrado"}
             except ProfileUnavailable as err:
@@ -127,6 +145,7 @@ def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=ti
 
     # Campo de sincronização apenas para a validação; NÃO altera source.lastSync do Sheets.
     data.setdefault("source", {})["lichessPlayersCheckedAt"] = stamp
+    data["source"]["lichessCorrespondenceCheckedAt"] = stamp
     return statuses
 
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate} from '../js/model.js';
+import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate,correspondenceRating} from '../js/model.js';
 
 const m=(round,white,black,result=null,status='Jogador em outra partida',extra={})=>({round,white,black,result,status,...extra});
 test('Resultado final substitui status antigo de em andamento',()=>{
@@ -163,4 +163,17 @@ test('#4 dias e fuso de São Paulo, ausência segura de timestamps e Bye intacto
  })]});
  assert.equal(t.matches[0].start,undefined);
  assert.equal(t.standings[0].points,0.5);
+});
+
+
+test('#5 rating somente da correspondência com provisório explícito',()=>{
+  const player={lichessValidation:{status:'valido'},lichessCorrespondence:{status:'disponivel',rating:1620,provisional:true,games:9}};
+  assert.deepEqual(correspondenceRating(player),{label:'Corr. 1620?',value:1620,provisional:true,games:9});
+  assert.equal(correspondenceRating({...player,lichessCorrespondence:{...player.lichessCorrespondence,provisional:false}}).label,'Corr. 1620');
+});
+test('#5 indisponível sem correspondência e sem perfil validado',()=>{
+  assert.equal(correspondenceRating({lichessValidation:{status:'valido'},lichessCorrespondence:{status:'indisponivel'}}).label,'Corr. —');
+  assert.equal(correspondenceRating({lichessValidation:{status:'indisponivel'},lichessCorrespondence:{status:'disponivel',rating:1600}}).label,'Corr. —');
+  assert.equal(correspondenceRating({}).label,'Corr. —');
+  assert.equal(correspondenceRating({lichessValidation:{status:'valido'},lichessCorrespondence:{status:'disponivel',rating:'1600'}}).label,'Corr. —');
 });

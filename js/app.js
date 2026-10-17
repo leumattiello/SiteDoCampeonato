@@ -1,4 +1,4 @@
-import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays,byeScore} from './model.js';
+import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating} from './model.js';
 const dataUrl='./data/campeonatos.json';
 const storageKey='reinos-xadrez-jogador';
 let store=null, current=null, archive=null, selected='', activePage='inicio', roundSelected=4, device='celular';
@@ -10,6 +10,17 @@ const COLORS=['#456f81','#934e4c','#53806a','#93763d','#685e91','#ac6f42','#6577
 const colorFor=name=>{let hash=0;for(const ch of String(name)) hash=(hash*31+ch.codePointAt(0))>>>0;return COLORS[hash%COLORS.length];};
 const formattedName=name=>{if(!name)return '—';const nick=store?.players?.find(p=>p.name===name)?.lichess;return `${name}${nick?` (${nick})`:''}`;};
 const nickFor=name=>store?.players?.find(p=>p.name===name)?.lichess||null;
+const ratingBadge=name=>{
+  const player=store?.players?.find(p=>p.name===name);
+  if (!player?.lichess) return '';
+  const info=correspondenceRating(player);
+  const nick=player.lichess;
+  const validated=player.lichessValidation?.status==='valido' && /^[A-Za-z0-9_-]{2,30}$/.test(nick);
+  const link=validated?`<a href="https://lichess.org/@/${encodeURIComponent(nick)}" target="_blank" rel="noopener noreferrer">Abrir perfil no Lichess ↗</a>`:'';
+  const detail=info.value===null?'Rating público de correspondência indisponível.':
+    `Rating público de correspondência: ${info.value}${info.provisional?' (provisório)':''}.${info.games===null?'':` ${info.games} partida(s) registradas.`}`;
+  return `<details class="corr-rating"><summary title="${s(detail)}" aria-label="${s(detail)}">${s(info.label)}</summary><span class="corr-rating-popover">${s(detail)}<small>Não são pontos do campeonato.</small>${link}</span></details>`;
+};
 const dateText=date=>{const d=parseDate(date);return d?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'}).format(d):'Data não informada';};
 const flag=(name,winner=false,small=false)=>`<span class="${small?'mini-banner':'banner'}" style="--banner-color:${colorFor(name)}" aria-hidden="true">${winner?'♛':'♞'}</span>`;
 const flagSmall=(name,winner=false)=>flag(name,winner,true);
@@ -44,10 +55,10 @@ function drawMyBattle(){
   else if(match.derivedStatus==='future')advise=`Esta rodada ainda não foi liberada. São permitidas partidas até a rodada ${current.currentRound+1}.`;
   else advise='Aguarde a atualização do resultado pelo organizador.';
   root.innerHTML=`<div class="battle-state"><span class="signal"></span>${chip(match.derivedStatus)} <span>· RODADA ${match.round}</span></div>
-  <div class="battle-stage"><div class="battle-player">${flag(match.white,whiteWinner)}<strong>${s(match.white)}</strong><small>${s(nickFor(match.white)||'Peças brancas')}</small></div><div class="versus">VS</div><div class="battle-player">${flag(match.black,blackWinner)}<strong>${s(match.black)}</strong><small>${s(nickFor(match.black)||'Peças pretas')}</small></div></div>
+  <div class="battle-stage"><div class="battle-player">${flag(match.white,whiteWinner)}<strong>${s(match.white)}</strong><small>${s(nickFor(match.white)||'Peças brancas')}</small>${ratingBadge(match.white)}</div><div class="versus">VS</div><div class="battle-player">${flag(match.black,blackWinner)}<strong>${s(match.black)}</strong><small>${s(nickFor(match.black)||'Peças pretas')}</small>${ratingBadge(match.black)}</div></div>
   <div class="battle-caption">${s(advise)}</div><div class="battle-bottom">${validLichessUrl(match.url)?`<a class="button button-gold" href="${s(validLichessUrl(match.url))}" target="_blank" rel="noopener noreferrer">Abrir partida ↗</a>`:`<button type="button" class="button button-gold" data-view="rodadas">Ver confronto ↗</button>`}<button type="button" class="button button-light" data-view="academia">Como jogar? ♜</button></div>`;
 }
-function drawLeaders(){byId('leaderboard-preview').innerHTML=current.standings.slice(0,5).map((p,i)=>`<div class="leader-row"><span class="rank ${['first','second','third'][i]||''}">${i+1}º</span>${flagSmall(p.name,i===0)}<div class="leader-name">${s(p.name)}<small>${nickFor(p.name)?s(nickFor(p.name)):`${p.wins} vitória${p.wins===1?'':'s'}`}</small></div><span class="leader-points">${number(p.points)} <small>pts</small></span></div>`).join('');}
+function drawLeaders(){byId('leaderboard-preview').innerHTML=current.standings.slice(0,5).map((p,i)=>`<div class="leader-row"><span class="rank ${['first','second','third'][i]||''}">${i+1}º</span>${flagSmall(p.name,i===0)}<div class="leader-name">${s(p.name)}<small>${nickFor(p.name)?s(nickFor(p.name)):`${p.wins} vitória${p.wins===1?'':'s'}`}</small>${ratingBadge(p.name)}</div><span class="leader-points">${number(p.points)} <small>pts</small></span></div>`).join('');}
 function drawRecent(){
   byId('recent-notice').textContent=current.recentVerified?'Ordenadas pela data de fim. Datas automáticas do Lichess são referências de criação e último lance, não instantes exatos.':'Datas de término ainda não informadas: exibindo as últimas linhas finalizadas da planilha, sem ordem cronológica garantida.';
   byId('recent-matches').innerHTML=current.recent.length?current.recent.map(m=>`<div class="recent-row"><span class="recent-icon">♟</span><div><div class="recent-title">${s(m.white)} <span class="fixture-vs">×</span> ${s(m.black)}</div><span class="recent-sub">Rodada ${m.round} · ${m.end?dateText(m.end):'Data pendente'}${m.duration!==null?` · ${m.duration} dias`:''}</span>${urlAnchor(m,'Assistir à partida ↗','match-action')}</div><div class="result-score">${s(m.result)}</div></div>`).join(''):`<div class="empty-message">As partidas concluídas aparecerão aqui.</div>`;
@@ -64,25 +75,25 @@ function drawGlory(){
   ];
   byId('glory-content').innerHTML=cards.map(v=>`<article class="honor-card"><div class="medal" aria-hidden="true">${v.icon}</div><h2>${v.name}</h2><p>${v.desc}</p><div class="holder">${v.holder?s(v.holder):'Aguardando dados suficientes'}</div></article>`).join('');
 }
-function standingsMarkup(t){return `<div class="table-wrap"><table class="standings-table"><thead><tr><th>Pos.</th><th>Jogador</th><th>Pontos</th><th>J</th><th>V</th><th>E</th><th>D</th><th title="Pontos recebidos nas folgas">Bye (pts)</th></tr></thead><tbody>${t.standings.map((p,i)=>`<tr><td>${i===0?'<span class="champion-crown" title="Líder">♛</span>':i+1+'º'}</td><td><div class="table-player">${flagSmall(p.name,i===0)}<span>${s(formattedName(p.name))}</span></div></td><td class="num"><strong>${number(p.points)}</strong></td><td class="num">${p.played}</td><td class="num">${p.wins}</td><td class="num">${p.draws}</td><td class="num">${p.losses}</td><td class="num">${number(p.byePoints)}</td></tr>`).join('')}</tbody></table></div>`;}
+function standingsMarkup(t){return `<div class="table-wrap"><table class="standings-table"><thead><tr><th>Pos.</th><th>Jogador</th><th>Pontos</th><th>J</th><th>V</th><th>E</th><th>D</th><th title="Pontos recebidos nas folgas">Bye (pts)</th></tr></thead><tbody>${t.standings.map((p,i)=>`<tr><td>${i===0?'<span class="champion-crown" title="Líder">♛</span>':i+1+'º'}</td><td><div class="table-player">${flagSmall(p.name,i===0)}<span>${s(formattedName(p.name))}</span>${t.active?ratingBadge(p.name):''}</div></td><td class="num"><strong>${number(p.points)}</strong></td><td class="num">${p.played}</td><td class="num">${p.wins}</td><td class="num">${p.draws}</td><td class="num">${p.losses}</td><td class="num">${number(p.byePoints)}</td></tr>`).join('')}</tbody></table></div>`;}
 function drawStandings(){
   const conflicts=current.matches.filter(m=>m.lichessDecision?.status==='conflito').length;
   const warning=conflicts?`<p class="lichess-warning" role="status">⚠ ${conflicts} confronto(s) com divergência entre Lichess e planilha. A pontuação da planilha foi mantida; confira a rodada correspondente.</p>`:'';
   byId('classificacao-content').innerHTML=standingsMarkup(current)+warning+`<p class="table-note"><strong>Como calculamos:</strong> vitória = 1 ponto; empate = 0,5; derrota = 0; folga (Bye) = valor informado na coluna B da planilha (sem valor = 0). J = partidas efetivamente disputadas (não inclui folgas). Em caso de igualdade em pontos, a exibição usa vitórias e depois ordem alfabética; esse ordenamento não define um desempate oficial do campeonato.</p>`;}
-function fixtureMarkup(m){
+function fixtureMarkup(m, showRatings=true){
   const whiteWon=m.result==='1-0',blackWon=m.result==='0-1';
   const label=m.derivedStatus==='bye'?'Folga (Bye)':statusNames[m.derivedStatus];
   const score=m.derivedStatus==='bye'?`<div class="fixture-result">${number(byeScore(m.byePoints))} pt</div>`:m.result?`<div class="fixture-result">${s(m.result)}</div>`:'';
   const origin=m.lichessDecision?.status==='finished' && m.result?'<span title="Placar confirmado pela API do Lichess">· Resultado Lichess</span>':'';
   const warning=m.lichessDecision?.status==='conflito'?'<span class="lichess-warning" role="status">⚠ Divergência com Lichess; placar da planilha mantido</span>':m.lichessDecision?.status==='ignorado'?'<span class="lichess-warning">⚠ Vínculo Lichess não confirmado</span>':'';
   const dateParts=[m.start?`Início: ${dateText(m.start)}`:'',m.end?`Fim: ${dateText(m.end)}`:'',m.duration!==null?`${m.duration} dias`:'' ].filter(Boolean).join(' · ');
-  return `<div class="fixture-row"><div><div class="fixture-names">${flagSmall(m.white,whiteWon)} <span>${s(formattedName(m.white))}</span> ${m.black?`<span class="fixture-vs">×</span> ${flagSmall(m.black,blackWon)} <span>${s(formattedName(m.black))}</span>`:'<span class="fixture-vs">— Folga</span>'}</div><div class="fixture-summary">${chip(m.derivedStatus)}${origin}${warning}<span>${dateParts?s(dateParts):m.derivedStatus==='bye'?'Descansa nesta rodada':`Rodada ${m.round}`}</span></div></div><div class="fixture-action">${score}${m.derivedStatus==='bye'?'':urlAnchor(m)}</div></div>`;
+  return `<div class="fixture-row"><div><div class="fixture-names">${flagSmall(m.white,whiteWon)} <span>${s(formattedName(m.white))}</span>${showRatings?ratingBadge(m.white):''} ${m.black?`<span class="fixture-vs">×</span> ${flagSmall(m.black,blackWon)} <span>${s(formattedName(m.black))}</span>${showRatings?ratingBadge(m.black):''}`:'<span class="fixture-vs">— Folga</span>'}</div><div class="fixture-summary">${chip(m.derivedStatus)}${origin}${warning}<span>${dateParts?s(dateParts):m.derivedStatus==='bye'?'Descansa nesta rodada':`Rodada ${m.round}`}</span></div></div><div class="fixture-action">${score}${m.derivedStatus==='bye'?'':urlAnchor(m)}</div></div>`;
 }
 function drawRounds(){
   const rounds=[...new Set(current.matches.map(m=>m.round))].sort((a,b)=>a-b);
   byId('round-buttons').innerHTML=rounds.map(r=>`<button type="button" class="round-button ${r===roundSelected?'current':''}" data-round="${r}" aria-pressed="${r===roundSelected}">R${r}</button>`).join('');
   const round=current.matches.filter(m=>m.round===roundSelected);
-  byId('round-content').innerHTML=`<h2 class="round-summary">Rodada ${roundSelected}${roundSelected===current.currentRound?' · Referência atual':''}</h2>${round.map(fixtureMarkup).join('')}`;
+  byId('round-content').innerHTML=`<h2 class="round-summary">Rodada ${roundSelected}${roundSelected===current.currentRound?' · Referência atual':''}</h2>${round.map(m=>fixtureMarkup(m)).join('')}`;
 }
 const tutorials=[
   {icon:'⚔',title:'Criar uma partida',sub:'Convide seu adversário e configure o tempo correto.',celular:['Abra o Lichess no aplicativo ou no navegador do celular e entre na sua conta.','Encontre o perfil do adversário pelo nome de usuário do Lichess.','No perfil, procure a opção de desafiar o jogador (ícone de espadas ou “Desafiar”).','Escolha a modalidade Correspondência e configure 1 dia por lance.','Confira a cor das peças indicada no site do campeonato antes de enviar o desafio.','Envie o desafio e aguarde a aceitação do adversário.'],computador:['Entre em lichess.org e faça login.','Abra o perfil do adversário usando o apelido dele no Lichess.','Clique ou toque no comando ou ícone para desafiar o jogador.','Escolha a modalidade Correspondência e configure 1 dia por lance.','Escolha a cor correta das peças conforme o confronto publicado.','Envie o desafio e espere a aceitação.']},
@@ -93,7 +104,7 @@ function drawHistory(){
   const node=byId('history-content');
   if(!archive){node.innerHTML='<div class="empty-message">Nenhuma edição anterior encontrada.</div>';return;}
   const winner=archive.standings[0];
-  node.innerHTML=`<article class="history-card"><div class="history-title-row"><span class="seal">♛</span><div><h2>${s(archive.title)}</h2><p>${s(archive.subtitle)} · ${archive.finished.length} partidas disputadas · ${archive.standings.length} participantes</p></div></div><div class="history-highlight"><span class="crown">♛</span><div><strong>Campeão: ${s(winner?.name||'Não definido')}</strong><small>${winner?`${number(winner.points)} pontos · ${winner.wins} vitórias`:''}</small></div></div>${standingsMarkup(archive)}<details style="margin-top:22px"><summary style="cursor:pointer;color:#8c692e;font-weight:700">Ver as partidas desta edição</summary><div style="margin-top:10px">${archive.matches.filter(m=>m.derivedStatus!=='bye').map(fixtureMarkup).join('')}</div></details></article>`;
+  node.innerHTML=`<article class="history-card"><div class="history-title-row"><span class="seal">♛</span><div><h2>${s(archive.title)}</h2><p>${s(archive.subtitle)} · ${archive.finished.length} partidas disputadas · ${archive.standings.length} participantes</p></div></div><div class="history-highlight"><span class="crown">♛</span><div><strong>Campeão: ${s(winner?.name||'Não definido')}</strong><small>${winner?`${number(winner.points)} pontos · ${winner.wins} vitórias`:''}</small></div></div>${standingsMarkup(archive)}<details style="margin-top:22px"><summary style="cursor:pointer;color:#8c692e;font-weight:700">Ver as partidas desta edição</summary><div style="margin-top:10px">${archive.matches.filter(m=>m.derivedStatus!=='bye').map(m=>fixtureMarkup(m,false)).join('')}</div></details></article>`;
 }
 function renderAll(){drawStats();drawMyBattle();drawLeaders();drawRecent();drawGlory();drawStandings();drawRounds();drawTutorials();drawHistory();}
 async function init(){

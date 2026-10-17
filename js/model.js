@@ -155,3 +155,15 @@ export function validLichessUrl(url){
   if(!url)return null;
   try {const parsed=new URL(url);return parsed.protocol==='https:' && ['lichess.org','www.lichess.org'].includes(parsed.hostname)?parsed.href:null;}catch{return null;}
 }
+
+/** Exibe apenas a modalidade correspondência e somente de perfis confirmados. */
+export function correspondenceRating(player) {
+  const corr=player?.lichessCorrespondence;
+  const validated=player?.lichessValidation?.status==='valido';
+  const rating=corr?.rating;
+  const available=validated && corr?.status==='disponivel' && Number.isInteger(rating) && rating>=100 && rating<=5000;
+  if (!available) return {label:'Corr. —',value:null,provisional:false,games:null};
+  const provisional=corr.provisional===true;
+  const games=Number.isInteger(corr.games) && corr.games>=0 ? corr.games : null;
+  return {label:`Corr. ${rating}${provisional?'?':''}`,value:rating,provisional,games};
+}

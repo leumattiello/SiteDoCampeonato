@@ -103,3 +103,8 @@ Após sincronizar Google Sheets, validar os nicks e consultar o Lichess, o Actio
 O Apps Script da #3 foi ampliado para preencher **G (Data Início)** e **H (Data Fim)** da aba `2`, preservando integralmente as datas que já existirem. Ele só considera o jogo se o ID, os dois jogadores e as cores forem confirmados no Lichess. A data de **G** usa `createdAt` (criação da partida, não necessariamente primeiro lance); **H** usa `lastMoveAt` (último lance, não necessariamente instante de encerramento) e só é gravada para partidas com resultado final verificável. Os valores são exibidos em `dd/MM/yyyy`, no fuso da planilha (atualmente `America/Sao_Paulo`), e auditados em `_AuditoriaDatasLichess`.
 
 O site já calculava duração em dias corridos e apresentava até cinco partidas recentes. Agora, caso G/H ainda estejam vazias, o site pode usar as datas importadas pela API do Lichess **somente após a validação da melhoria #3**. As datas digitadas na planilha sempre prevalecem. Consulte [`docs/melhoria-04-datas-lichess.md`](docs/melhoria-04-datas-lichess.md) para atualizar o Apps Script e executar testes seguros.
+
+
+### Melhoria #5 — Rating Lichess de correspondência
+
+A sincronização dos perfis via GitHub Actions também importa exclusivamente `perfs.correspondence.rating`, com indicador `?` se provisório. No site, o selo `Corr. 1620`, `Corr. 1620?` ou `Corr. —` aparece ao lado do jogador; é possível abrir os detalhes por toque, clique ou teclado. Esse rating **não é a pontuação do campeonato**. Consulte `docs/melhoria-05-rating-correspondencia.md`.

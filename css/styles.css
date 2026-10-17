@@ -23,3 +23,19 @@
 
 /* Avisos da integração Lichess: discretos, legíveis e visíveis em telas móveis. */
 .lichess-warning{font-size:11px;font-weight:700;color:#864d23;background:#fff0d7;border:1px solid #e4c58f;border-radius:3px;padding:3px 7px;max-width:100%;overflow-wrap:anywhere}
+
+
+/* #5 — Rating discreto da modalidade correspondência. Details funciona com
+   clique/toque, teclado (Enter/Espaço) e abertura por leitores de tela. */
+.corr-rating{position:relative;display:inline-block;vertical-align:middle;font:inherit;line-height:1.25;flex-shrink:0;min-width:0}
+.corr-rating summary{display:inline-block;list-style:none;cursor:pointer;border:1px solid #d4cab5;border-radius:4px;background:#f7f2e8;color:#5b625a;padding:2px 5px;font:600 10px/1.35 system-ui,sans-serif;white-space:nowrap}
+.corr-rating summary::-webkit-details-marker{display:none}
+.corr-rating summary:hover,.corr-rating[open] summary{background:#ede3cf;border-color:#bba87e}
+.corr-rating summary:focus-visible{outline:2px solid #906520;outline-offset:2px}
+.corr-rating-popover{position:static;width:220px;max-width:min(220px,80vw);display:block;padding:10px 12px;background:#fffaf0;color:#3f4940;border:1px solid #c2b48f;box-shadow:0 8px 22px #20251f23;border-radius:6px;white-space:normal;font:12px/1.5 system-ui,sans-serif;text-align:left}
+.corr-rating-popover small{display:block!important;font:11px/1.5 system-ui,sans-serif;color:#756f62;margin-top:5px}
+.corr-rating-popover a{display:block;margin-top:6px;color:#365b6d;text-decoration:underline}
+.table-player,.fixture-names{flex-wrap:wrap}
+.leader-name{overflow:visible;white-space:normal;min-width:0}
+.battle-player .corr-rating{margin-top:2px}
+@media(max-width:740px){.corr-rating-popover{max-width:180px}}

@@ -11,7 +11,7 @@ from urllib.error import HTTPError
 
 from scripts.validate_lichess_players import (
     NickNotFound, ProfileUnavailable, get_public_profile,
-    main, verify_players,
+    main, verify_players, correspondence_rating,
 )
 
 
@@ -50,6 +50,42 @@ class ValidatePlayersTest(unittest.TestCase):
         self.assertEqual(obj["source"]["lichessPlayersCheckedAt"], "2026-10-15T13:00:00Z")
         self.assertEqual(obj["players"][0]["lichessValidation"]["url"], "https://lichess.org/@/Akiqui")
         self.assertNotIn("Historico", result)
+
+
+    def test_correspondence_only_and_provisional(self):
+        obj = fixture()
+        def lookup(nick):
+            return {'id': nick.lower(), 'username': nick, 'perfs': {
+                'correspondence': {'rating': 1620, 'prov': True, 'games': 5},
+                'rapid': {'rating': 2600}, 'blitz': {'rating': 2400}}}
+        with redirect_stdout(io.StringIO()):
+            verify_players(obj, lookup=lookup, checked_at='2026-10-17T10:00:00Z', pause=lambda s: None)
+        corr = obj['players'][0]['lichessCorrespondence']
+        self.assertEqual(corr, {'status': 'disponivel', 'rating': 1620,
+                                'provisional': True, 'games': 5, 'checkedAt': '2026-10-17T10:00:00Z'})
+        self.assertEqual(obj['source']['lichessCorrespondenceCheckedAt'], '2026-10-17T10:00:00Z')
+
+    def test_missing_correspondence_does_not_fall_back_to_rapid(self):
+        obj = fixture()
+        with redirect_stdout(io.StringIO()):
+            verify_players(obj, lookup=lambda nick: {'id': nick.lower(), 'username': nick,
+                'perfs': {'rapid': {'rating': 1800}}}, pause=lambda s: None)
+        self.assertEqual(obj['players'][0]['lichessCorrespondence']['status'], 'indisponivel')
+
+    def test_invalid_or_failed_profile_discards_old_rating(self):
+        obj = fixture()
+        obj['players'][0]['lichessCorrespondence'] = {'status': 'disponivel', 'rating': 3000}
+        with redirect_stdout(io.StringIO()):
+            verify_players(obj, lookup=lambda nick: (_ for _ in ()).throw(ProfileUnavailable('HTTP 503')), pause=lambda s: None)
+        self.assertEqual(obj['players'][0]['lichessCorrespondence']['status'], 'indisponivel')
+        self.assertNotIn('rating', obj['players'][0]['lichessCorrespondence'])
+
+    def test_rating_defensive_validation(self):
+        stamp='2026-10-17T10:00:00Z'
+        for invalid in [None, True, 1.5, -10, 999999, '1500']:
+            self.assertEqual(correspondence_rating({'perfs': {'correspondence': {'rating': invalid}}}, stamp)['status'], 'indisponivel')
+        self.assertFalse(correspondence_rating({'perfs': {'correspondence': {'rating': 1500, 'prov': False}}}, stamp)['provisional'])
+        self.assertNotIn('games', correspondence_rating({'perfs': {'correspondence': {'rating': 1500, 'games': True}}}, stamp))
 
     def test_not_found_is_invalid_not_fatal(self):
         obj = fixture()

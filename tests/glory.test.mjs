@@ -17,9 +17,10 @@ const tour=(matches,currentRound=1)=>buildTournament({active:true,currentRound,m
 const byKey=(t,k)=>gloryAwards(t).find(a=>a.key===k);
 const names=a=>a.holders;
 
-test('sempre retorna as seis honrarias com critérios auditáveis',()=>{
+test('retorna seis honrarias clássicas e onze tronos regionais com critérios auditáveis',()=>{
  const arr=gloryAwards(tour([]));
- assert.deepEqual(arr.map(a=>a.key),['siege','epic','lightning','conqueror','shield','master']);
+ assert.deepEqual(arr.slice(0,6).map(a=>a.key),['siege','epic','lightning','conqueror','shield','master']);
+ assert.equal(arr.length,17);
  assert.ok(arr.every(a=>a.score===null && a.holders.length===0 && a.games.length===0));
  assert.ok(arr.every(a=>a.criterion && a.detail));
 });
@@ -115,7 +116,7 @@ test('Uma única abertura, falta de PGN e metadados conflitantes não criam prê
  assert.equal(byKey(t,'epic').score,null);
  assert.equal(byKey(t,'lightning').score,null);
  assert.equal(byKey(t,'conqueror').score,'1 vitória'); // Sheets prevalece
- assert.equal(byKey(t,'epic').provisional,true);
+ assert.equal(byKey(t,'epic').score,null);
 });
 
 test('Dados incompletos e torneio em andamento sinalizam prêmio provisório',()=>{
@@ -124,7 +125,7 @@ test('Dados incompletos e torneio em andamento sinalizam prêmio provisório',()
   {id:'Bc23De45',round:1,white:'Carol',black:'Dora',status:'Em andamento',result:null}
  ]);
  const honors=gloryAwards(t);
- assert.ok(honors.every(a=>a.provisional));
+ assert.ok(honors.every(a=>!('provisional' in a)));
  assert.equal(byKey(t,'siege').score,null);
  assert.equal(byKey(t,'shield').score,null);
  assert.equal(byKey(t,'conqueror').score,'1 vitória');

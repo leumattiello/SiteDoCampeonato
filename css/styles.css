@@ -77,3 +77,11 @@
 .ongoing-row .live-sync-note{margin-top:3px}
 @media(max-width:780px){#ongoing-matches{grid-template-columns:1fr}}
 @media(max-width:420px){.ongoing-row{grid-template-columns:24px minmax(0,1fr)}.ongoing-row .status-chip{grid-column:2;justify-self:start}}
+
+/* #8 — estatísticas validadas de partidas do Lichess */
+.game-stats{margin-top:6px;display:flex;flex-direction:column;gap:2px;font-size:11px;line-height:1.4;color:#675f4d;overflow-wrap:anywhere}
+.game-stats span{display:block}
+.game-stats.muted{color:#888073;font-style:italic}
+.fixture-summary .game-stats{margin-top:5px}
+.battle-caption + .game-stats{margin:8px 0 12px}
+@media(max-width:600px){.game-stats{font-size:10px}}

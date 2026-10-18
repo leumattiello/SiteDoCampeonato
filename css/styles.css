@@ -85,3 +85,23 @@
 .fixture-summary .game-stats{margin-top:5px}
 .battle-caption + .game-stats{margin:8px 0 12px}
 @media(max-width:600px){.game-stats{font-size:10px}}
+
+/* #9 — seis honrarias com critérios, empates, partidas e indicador provisório. */
+.honor-card .honor-criterion{margin-top:10px;line-height:1.5}
+.honor-card .honor-detail{margin-top:8px}
+.honor-card .honor-metric{font-weight:700;color:#685333;margin-top:6px}
+.honor-card .honor-note{font-size:11px;margin-top:10px;color:#746b5f}
+
+.honor-card .honor-games{margin-top:12px;border-top:1px solid #ddd0b6;padding-top:10px;font-size:12px}
+.honor-card .honor-games summary{cursor:pointer;font-weight:700;color:#866129}
+.honor-card .honor-games ul{margin:9px 0 0;padding-left:19px}
+.honor-card .honor-games li{margin:6px 0;overflow-wrap:anywhere}
+.honor-card .honor-games a{color:#805d2d}
+
+/* #9: tronos regionais, mapas estilizados das regiões, responsivos. */
+.glory-section-title{grid-column:1/-1;font-size:20px;color:#57472b;margin:10px 0 0;padding-bottom:7px;border-bottom:1px solid #c6b68e}
+.glory-section-title.regional-title{margin-top:22px}
+.medal-map{display:grid;place-items:center}
+.medal-map svg{width:53px;height:53px;fill:#654821;stroke:#f6d895;stroke-width:.55;stroke-linejoin:round}
+.honor-regional .holder{font-size:16px}
+@media(max-width:600px){.glory-section-title{font-size:18px}}

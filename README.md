@@ -123,3 +123,7 @@ Jogos efetivamente iniciados e validados pelo Lichess mostram **♟ Acompanhar t
 ### Melhoria #8 — Aberturas, lances e término
 
 Confrontos exibem abertura pública identificada pelo Lichess, número de lances individuais e pares completos e forma de término, somente com partida verificada. Partidas em andamento podem estar atrasadas; dados ausentes não são inventados. Consulte `docs/melhoria-08-aberturas-e-lances.md`.
+
+### Melhoria #9 — Salão da Glória
+
+Seis honrarias calculadas a partir das partidas oficiais: **Grande Cerco** (dias entre datas), **Batalha Épica** (mais meio-lances), **Ataque Relâmpago** (vitória em menos meio-lances), **Conquistador** (mais vitórias), **Escudo Invicto** (sequência por data de encerramento) e **Mestre das Aberturas** (variedade de códigos ECO, mínimo dois). Critérios, participantes, empates e partidas relacionadas aparecem no site; premiações sujeitas a alterações são sinalizadas como provisórias. A implementação não altera pontos ou a planilha. Consulte `docs/melhoria-09-salao-da-gloria.md`.

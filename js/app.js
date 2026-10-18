@@ -2,6 +2,7 @@ import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeSc
 import {activeBoardInfo} from './live.js';
 import {gameStats} from './game-stats.js';
 import {gloryAwards} from './glory.js';
+import {REGION_MAPS} from './regions.js';
 const dataUrl='./data/campeonatos.json';
 const storageKey='reinos-xadrez-jogador';
 let store=null, current=null, archive=null, selected='', activePage='inicio', roundSelected=4, device='celular';
@@ -156,28 +157,37 @@ function drawOngoing(){
 function drawGlory(){
   const awards=gloryAwards(current);
   const summarize=a=>a.score
-    ? a.holders.join(', ')+' · '+a.score+(a.provisional?' · provisória':'')
+    ? a.holders.join(', ')+' · '+a.score
     : 'Aguardando dados suficientes';
   const preview=['conqueror','siege'].map(key=>awards.find(a=>a.key===key));
   byId('glory-preview').innerHTML=preview.map(a=>
     '<div class="glory-preview-card"><span class="medal" aria-hidden="true">'+s(a.icon)+'</span><div><h3>'+s(a.name)+'</h3><p>'+s(summarize(a))+'</p></div></div>'
   ).join('');
+  const medalArt=a=>a.mapId&&REGION_MAPS[a.mapId]
+    ? '<span class="medal medal-map" role="img" aria-label="Mapa estilizado de '+s(a.mapLabel)+'"><svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="'+REGION_MAPS[a.mapId]+'"/></svg></span>'
+    : '<span class="medal" aria-hidden="true">'+s(a.icon)+'</span>';
   const matchRefs=games=>'<details class="honor-games"><summary>Partidas relacionadas ('+games.length+')</summary><ul>'+
     games.map(m=>{
       const label='Rodada '+m.round+' · '+m.white+' × '+m.black+(m.result?' · '+m.result:'');
       const href=validLichessUrl(m.url);
       return '<li>'+(href?'<a href="'+s(href)+'" target="_blank" rel="noopener noreferrer">'+s(label)+' ↗</a>':s(label)+' (link não disponível)')+'</li>';
     }).join('')+'</ul></details>';
-  byId('glory-content').innerHTML=awards.map(a=>
-    '<article class="honor-card honor-'+s(a.key)+'"><div class="medal" aria-hidden="true">'+s(a.icon)+'</div>'+
+  byId('glory-content').innerHTML='<h2 class="glory-section-title">Honrarias do campeonato</h2>'+awards.filter(a=>!a.mapId).map(a=>
+    '<article class="honor-card honor-'+s(a.key)+'">'+medalArt(a)+
     '<h2>'+s(a.name)+'</h2><p class="honor-criterion"><strong>Critério:</strong> '+s(a.criterion)+'</p>'+
     '<div class="holder">'+(a.holders.length?s(a.holders.join(' · ')):'Aguardando dados suficientes')+'</div>'+
     (a.score?'<p class="honor-metric">'+s(a.score)+'</p>':'')+
-    (a.score&&a.provisional?'<span class="honor-provisional">Honraria provisória</span>':'')+
     '<p class="honor-detail">'+s(a.detail)+'</p>'+
     (a.note?'<p class="honor-note">'+s(a.note)+'</p>':'')+
     (a.games.length?matchRefs(a.games):'')+
     '</article>'
+  ).join('')+'<h2 class="glory-section-title regional-title">Tronos das Aberturas</h2>'+awards.filter(a=>a.mapId).map(a=>
+    '<article class="honor-card honor-regional">'+medalArt(a)+
+    '<h2>'+s(a.name)+'</h2><p class="honor-criterion"><strong>Critério:</strong> '+s(a.criterion)+'</p>'+
+    '<div class="holder">'+(a.holders.length?s(a.holders.join(' · ')):'Trono sem conquistador')+'</div>'+
+    (a.score?'<p class="honor-metric">'+s(a.score)+'</p>':'')+
+    '<p class="honor-detail">'+s(a.detail)+'</p>'+
+    (a.games.length?matchRefs(a.games):'')+'</article>'
   ).join('');
 }
 function standingsMarkup(t){return `<div class="table-wrap"><table class="standings-table"><thead><tr><th>Pos.</th><th>Jogador</th><th>Pontos</th><th>J</th><th>V</th><th>E</th><th>D</th><th title="Pontos recebidos nas folgas">Bye (pts)</th></tr></thead><tbody>${t.standings.map((p,i)=>`<tr><td>${i===0?'<span class="champion-crown" title="Líder">♛</span>':i+1+'º'}</td><td><div class="table-player">${flagSmall(p.name,i===0)}<span>${s(formattedName(p.name))}</span>${t.active?ratingBadge(p.name):''}</div></td><td class="num"><strong>${number(p.points)}</strong></td><td class="num">${p.played}</td><td class="num">${p.wins}</td><td class="num">${p.draws}</td><td class="num">${p.losses}</td><td class="num">${number(p.byePoints)}</td></tr>`).join('')}</tbody></table></div>`;}

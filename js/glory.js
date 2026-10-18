@@ -1,6 +1,7 @@
 /** Melhoria #9: honrarias, empates e dados insuficientes, sem modificar pontuação. */
 import {parseDate} from './model.js';
 import {gameStats} from './game-stats.js';
+import {REGIONS,matchesRegion} from './regions.js';
 
 const names=arr=>[...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
 const winner=m=>m.result==='1-0'?m.white:m.result==='0-1'?m.black:null;
@@ -18,9 +19,9 @@ function related(finished,rows) {
   return finished.filter(m=>selected.has(m));
 }
 function award(key,name,icon,criterion,detail,score,holders,games,pending,missing=false,extra='') {
+  // Tronos dinâmicos: não existe a categoria visual de honraria provisória.
   return {key,name,icon,criterion,detail,score,holders:names(holders),games,
-    provisional:!!(pending||missing),
-    note:[pending?'Campeonato em andamento.':'',missing?'Nem todos os jogos finalizados possuem dados para este critério.':'',extra].filter(Boolean).join(' ')};
+    note:[missing?'Algumas partidas ainda não possuem dados para este critério.':'',extra].filter(Boolean).join(' ')};
 }
 export function gloryAwards(t) {
   const finished=(t?.finished||[]).filter(valid);
@@ -115,5 +116,28 @@ export function gloryAwards(t) {
     ecoLeaders.score===null?null:ecoLeaders.score+' aberturas ECO distintas',
     ecoNames,related(finished,ecoLeaders.rows),pending,
     finished.some(m=>!stats.get(m)?.eco),codes));
+  // Os tronos regionais contam SOMENTE vitórias. Aberturas são classificadas
+  // pelo nome específico do Lichess; ECO entra apenas quando o nome falta.
+  for(const region of REGIONS){
+    const counts=new Map();
+    for(const m of victories){
+      if(!matchesRegion(region,stats.get(m)))continue;
+      const name=winner(m);
+      if(!counts.has(name))counts.set(name,{score:0,games:[]});
+      counts.get(name).score++;
+      counts.get(name).games.push(m);
+    }
+    const top=leaders(counts);
+    const champion=award(region.key,region.name,'♛',
+      'Mais vitórias em '+region.family+'.',
+      'Só contam vitórias em partidas encerradas com abertura confirmada pelo Lichess. Empates premiam todos os líderes.',
+      top.score===null?null:top.score+' vitória'+(top.score===1?'':'s'),
+      top.rows.map(([name])=>name),
+      related(finished,top.rows),false,false);
+    champion.mapId=region.key;
+    champion.mapLabel=region.label;
+    champion.family=region.family;
+    out.push(champion);
+  }
   return out;
 }

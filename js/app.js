@@ -1,6 +1,7 @@
-import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches} from './model.js';
+import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches} from './model.js';
 import {activeBoardInfo} from './live.js';
 import {gameStats} from './game-stats.js';
+import {gloryAwards} from './glory.js';
 const dataUrl='./data/campeonatos.json';
 const storageKey='reinos-xadrez-jogador';
 let store=null, current=null, archive=null, selected='', activePage='inicio', roundSelected=4, device='celular';
@@ -153,16 +154,31 @@ function drawOngoing(){
   }).join(''):'<div class="empty-message">As partidas iniciadas aparecerão aqui.</div>';
 }
 function drawGlory(){
-  const h=honors(current);
-  const preview=[{icon:'♛',name:'O Conquistador',sub:h.mostWins?`${h.mostWins.name} · ${h.mostWins.wins} vitórias`:'Aguardando resultados'},{icon:'♜',name:'O Grande Cerco',sub:h.longest?`${h.longest.white} × ${h.longest.black} · ${h.longest.duration} dias`:'Aguardando datas das partidas'}];
-  byId('glory-preview').innerHTML=preview.map(v=>`<div class="glory-preview-card"><span class="medal" aria-hidden="true">${v.icon}</span><div><h3>${v.name}</h3><p>${s(v.sub)}</p></div></div>`).join('');
-  const cards=[
-    {icon:'♛',name:'O Conquistador',desc:'Jogador com maior número de vitórias no campeonato.',holder:h.mostWins?`${h.mostWins.name} · ${h.mostWins.wins} vitórias`:null},
-    {icon:'♜',name:'O Grande Cerco',desc:'A batalha que resistiu por mais dias — honra compartilhada pelos dois participantes.',holder:h.longest?`${h.longest.white} e ${h.longest.black} · ${h.longest.duration} dias`:null},
-    {icon:'⚡',name:'Ataque Relâmpago',desc:'Vitória decidida no menor número de dias corridos.',holder:h.quickest?`${h.quickest.result==='1-0'?h.quickest.white:h.quickest.black} · ${h.quickest.duration} dias`:null},
-    {icon:'❖',name:'Escudo Invicto',desc:'Maior sequência de partidas finalizadas sem derrota, na ordem das datas de encerramento.',holder:h.streak?`${h.streak.name} · ${h.streak.count} partidas`:null}
-  ];
-  byId('glory-content').innerHTML=cards.map(v=>`<article class="honor-card"><div class="medal" aria-hidden="true">${v.icon}</div><h2>${v.name}</h2><p>${v.desc}</p><div class="holder">${v.holder?s(v.holder):'Aguardando dados suficientes'}</div></article>`).join('');
+  const awards=gloryAwards(current);
+  const summarize=a=>a.score
+    ? a.holders.join(', ')+' · '+a.score+(a.provisional?' · provisória':'')
+    : 'Aguardando dados suficientes';
+  const preview=['conqueror','siege'].map(key=>awards.find(a=>a.key===key));
+  byId('glory-preview').innerHTML=preview.map(a=>
+    '<div class="glory-preview-card"><span class="medal" aria-hidden="true">'+s(a.icon)+'</span><div><h3>'+s(a.name)+'</h3><p>'+s(summarize(a))+'</p></div></div>'
+  ).join('');
+  const matchRefs=games=>'<details class="honor-games"><summary>Partidas relacionadas ('+games.length+')</summary><ul>'+
+    games.map(m=>{
+      const label='Rodada '+m.round+' · '+m.white+' × '+m.black+(m.result?' · '+m.result:'');
+      const href=validLichessUrl(m.url);
+      return '<li>'+(href?'<a href="'+s(href)+'" target="_blank" rel="noopener noreferrer">'+s(label)+' ↗</a>':s(label)+' (link não disponível)')+'</li>';
+    }).join('')+'</ul></details>';
+  byId('glory-content').innerHTML=awards.map(a=>
+    '<article class="honor-card honor-'+s(a.key)+'"><div class="medal" aria-hidden="true">'+s(a.icon)+'</div>'+
+    '<h2>'+s(a.name)+'</h2><p class="honor-criterion"><strong>Critério:</strong> '+s(a.criterion)+'</p>'+
+    '<div class="holder">'+(a.holders.length?s(a.holders.join(' · ')):'Aguardando dados suficientes')+'</div>'+
+    (a.score?'<p class="honor-metric">'+s(a.score)+'</p>':'')+
+    (a.score&&a.provisional?'<span class="honor-provisional">Honraria provisória</span>':'')+
+    '<p class="honor-detail">'+s(a.detail)+'</p>'+
+    (a.note?'<p class="honor-note">'+s(a.note)+'</p>':'')+
+    (a.games.length?matchRefs(a.games):'')+
+    '</article>'
+  ).join('');
 }
 function standingsMarkup(t){return `<div class="table-wrap"><table class="standings-table"><thead><tr><th>Pos.</th><th>Jogador</th><th>Pontos</th><th>J</th><th>V</th><th>E</th><th>D</th><th title="Pontos recebidos nas folgas">Bye (pts)</th></tr></thead><tbody>${t.standings.map((p,i)=>`<tr><td>${i===0?'<span class="champion-crown" title="Líder">♛</span>':i+1+'º'}</td><td><div class="table-player">${flagSmall(p.name,i===0)}<span>${s(formattedName(p.name))}</span>${t.active?ratingBadge(p.name):''}</div></td><td class="num"><strong>${number(p.points)}</strong></td><td class="num">${p.played}</td><td class="num">${p.wins}</td><td class="num">${p.draws}</td><td class="num">${p.losses}</td><td class="num">${number(p.byePoints)}</td></tr>`).join('')}</tbody></table></div>`;}
 function drawStandings(){

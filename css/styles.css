@@ -85,3 +85,15 @@
 .fixture-summary .game-stats{margin-top:5px}
 .battle-caption + .game-stats{margin:8px 0 12px}
 @media(max-width:600px){.game-stats{font-size:10px}}
+
+/* #9 — seis honrarias com critérios, empates, partidas e indicador provisório. */
+.honor-card .honor-criterion{margin-top:10px;line-height:1.5}
+.honor-card .honor-detail{margin-top:8px}
+.honor-card .honor-metric{font-weight:700;color:#685333;margin-top:6px}
+.honor-card .honor-note{font-size:11px;margin-top:10px;color:#746b5f}
+.honor-card .honor-provisional{display:inline-block;margin-top:8px;padding:3px 9px;border:1px solid #bb9960;background:#f2e5c8;color:#685024;font-size:11px;font-weight:700}
+.honor-card .honor-games{margin-top:12px;border-top:1px solid #ddd0b6;padding-top:10px;font-size:12px}
+.honor-card .honor-games summary{cursor:pointer;font-weight:700;color:#866129}
+.honor-card .honor-games ul{margin:9px 0 0;padding-left:19px}
+.honor-card .honor-games li{margin:6px 0;overflow-wrap:anywhere}
+.honor-card .honor-games a{color:#805d2d}

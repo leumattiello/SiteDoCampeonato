@@ -61,3 +61,19 @@
 .replay-footer p{font:12px/1.6 system-ui,sans-serif;color:#6e675a;flex:1}
 .replay-footer .button{white-space:nowrap;text-align:center}
 @media(max-width:600px){.replay-dialog{width:calc(100vw - 12px);max-height:calc(100dvh - 12px)}.replay-panel{padding:12px}.replay-embed{height:min(66dvh,500px)}.replay-footer{flex-direction:column;align-items:stretch}.replay-close span{display:none}}
+
+/* #7: acompanhamento de partidas ativas; posição pode estar atrasada. */
+.live-watch-trigger{border-color:#698f79!important;color:#275845!important}
+.live-watch-trigger:hover{background:#e5f0e8!important}
+.live-sync-note{display:block;font-size:11px;line-height:1.5;color:#6b675e;margin-top:4px;max-width:420px}
+@media(max-width:600px){.fixture-action .live-watch-trigger{margin:4px 0}.live-sync-note{font-size:11px}}
+
+/* Página inicial: lista de partidas em andamento, até dez, ordem original da planilha. */
+.ongoing-panel{grid-column:1 / -1}
+#ongoing-matches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;align-items:start}
+.ongoing-row{grid-template-columns:25px minmax(0,1fr) auto;min-width:0}
+.ongoing-row-content{min-width:0;overflow-wrap:anywhere}
+.ongoing-row .status-chip{font-size:10px;white-space:nowrap}
+.ongoing-row .live-sync-note{margin-top:3px}
+@media(max-width:780px){#ongoing-matches{grid-template-columns:1fr}}
+@media(max-width:420px){.ongoing-row{grid-template-columns:24px minmax(0,1fr)}.ongoing-row .status-chip{grid-column:2;justify-self:start}}

@@ -12,6 +12,12 @@ Site gratuito para campeonatos de xadrez por correspondência, hospedado no **Gi
 - Salão da Glória (conquistas com dados disponíveis); Academia do Lichess com dois tutoriais (criar uma partida e aceitar um desafio), com instruções para celular e computador. Os passos de computador também podem ser seguidos no navegador do celular (Chrome, Firefox etc.); histórico da edição anterior.
 - Arquivos de exemplo são **dados reais da planilha enviada em 14/10/2026**, mas **não representam uma sincronização ao vivo**. O status do site indica isso.
 
+### Melhoria #6 — Replay das partidas finalizadas
+
+Confrontos concluídos **com jogo confirmado na sincronização Lichess (#3)** exibem **♜ Rever partida** nas Rodadas e nas Partidas recentes. Ao selecionar, abre-se um tabuleiro oficial incorporado do Lichess, com navegação por lances, sem sair do site. A incorporação é carregada somente após o clique; a janela fecha por botão ou Esc, em computador e celular. O link **Abrir no Lichess ↗** permanece sempre visível para jogos com URL válida, servindo também como alternativa quando a incorporação for bloqueada por navegador, privacidade ou Lichess.
+
+Por segurança, só há replay quando o resultado final, o ID do jogo e a decisão validada pela melhoria #3 concordam. Jogos em andamento, Byes, inconsistências e edições históricas ainda não verificadas não são oferecidos para replay. A integração não grava na planilha nem faz novas requisições à API em cada navegador. Veja `docs/melhoria-06-replay-lichess.md`.
+
 ## Layout de cada aba de campeonato
 
 **Não mude as cinco colunas originais!** O importador usa o layout real da planilha:

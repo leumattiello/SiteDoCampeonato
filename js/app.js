@@ -1,4 +1,4 @@
-import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating} from './model.js';
+import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo} from './model.js';
 const dataUrl='./data/campeonatos.json';
 const storageKey='reinos-xadrez-jogador';
 let store=null, current=null, archive=null, selected='', activePage='inicio', roundSelected=4, device='celular';
@@ -28,6 +28,44 @@ const statusNames={bye:'Folga (Bye)',finished:'Finalizada',playing:'Em andamento
 const statusClasses={bye:'bye',finished:'finished',playing:'playing',ready:'ready',busy:'busy',future:'future','missing-result':'future'};
 const chip=st=>`<span class="status-chip status-${statusClasses[st]||'future'}">${statusNames[st]||s(st)}</span>`;
 const urlAnchor=(m,label='Ver no Lichess ↗',klass='action-link')=>{const href=validLichessUrl(m.url);return href?`<a class="${klass}" href="${s(href)}" target="_blank" rel="noopener noreferrer">${s(label)}</a>`:`<span class="${klass} disabled" title="O organizador ainda não cadastrou o link">Link pendente</span>`;};
+// #6: ação exibida apenas quando a partida foi verificada na conciliação #3.
+const replayButton=(m,klass='action-link')=>replayInfo(m)
+  ? `<button type="button" class="replay-trigger ${klass}" data-replay-id="${s(m.id)}" aria-label="Rever ${s(m.white)} contra ${s(m.black)} no tabuleiro">♜ Rever partida</button>` : '';
+
+function replayDialog() {
+  let node=byId('replay-dialog');
+  if (node) return node;
+  node=document.createElement('dialog');
+  node.id='replay-dialog';
+  node.className='replay-dialog';
+  node.setAttribute('aria-labelledby','replay-heading');
+  node.innerHTML=`<div class="replay-panel">
+    <header class="replay-header"><div><small>♜ Crônica da batalha · Replay</small>
+      <h2 id="replay-heading"></h2><p id="replay-details"></p></div>
+      <button type="button" class="replay-close" data-replay-close aria-label="Fechar replay">✕ <span>Fechar</span></button></header>
+    <div class="replay-embed"><iframe id="replay-iframe" title="Tabuleiro Lichess com navegação pelos lances" referrerpolicy="no-referrer" allowfullscreen></iframe></div>
+    <footer class="replay-footer"><p>Use os controles dentro do tabuleiro para avançar ou voltar os lances. Se ele não carregar, abra a partida diretamente no Lichess.</p>
+      <a id="replay-link" class="button button-gold" target="_blank" rel="noopener noreferrer">Abrir no Lichess ↗</a></footer>
+  </div>`;
+  document.body.append(node);
+  node.querySelector('[data-replay-close]').addEventListener('click',()=>node.close());
+  node.addEventListener('click',e=>{if(e.target===node)node.close();});
+  node.addEventListener('close',()=>{node.querySelector('#replay-iframe').removeAttribute('src');});
+  return node;
+}
+function openReplay(id) {
+  const match=current?.matches.find(m=>m.id===id);
+  const info=match&&replayInfo(match);
+  if (!info) return;
+  const node=replayDialog();
+  node.querySelector('#replay-heading').textContent=`${match.white} × ${match.black}`;
+  node.querySelector('#replay-details').textContent=`Rodada ${match.round} · ${match.result} · Partida encerrada`;
+  node.querySelector('#replay-link').href=info.gameUrl;
+  if (typeof node.showModal!=='function') {window.open(info.gameUrl,'_blank','noopener,noreferrer');return;}
+  node.querySelector('#replay-iframe').src=info.embedUrl;
+  node.showModal();
+  node.querySelector('[data-replay-close]').focus();
+}
 function showToast(text){const toast=byId('toast');toast.textContent=text;toast.classList.add('visible');clearTimeout(showToast.handle);showToast.handle=setTimeout(()=>toast.classList.remove('visible'),3500);}
 function showPage(name){
   if(!['inicio','classificacao','rodadas','gloria','academia','historico'].includes(name))name='inicio';
@@ -61,7 +99,7 @@ function drawMyBattle(){
 function drawLeaders(){byId('leaderboard-preview').innerHTML=current.standings.slice(0,5).map((p,i)=>`<div class="leader-row"><span class="rank ${['first','second','third'][i]||''}">${i+1}º</span>${flagSmall(p.name,i===0)}<div class="leader-name">${s(p.name)}<small>${nickFor(p.name)?s(nickFor(p.name)):`${p.wins} vitória${p.wins===1?'':'s'}`}</small>${ratingBadge(p.name)}</div><span class="leader-points">${number(p.points)} <small>pts</small></span></div>`).join('');}
 function drawRecent(){
   byId('recent-notice').textContent=current.recentVerified?'Ordenadas pela data de fim. Datas automáticas do Lichess são referências de criação e último lance, não instantes exatos.':'Datas de término ainda não informadas: exibindo as últimas linhas finalizadas da planilha, sem ordem cronológica garantida.';
-  byId('recent-matches').innerHTML=current.recent.length?current.recent.map(m=>`<div class="recent-row"><span class="recent-icon">♟</span><div><div class="recent-title">${s(m.white)} <span class="fixture-vs">×</span> ${s(m.black)}</div><span class="recent-sub">Rodada ${m.round} · ${m.end?dateText(m.end):'Data pendente'}${m.duration!==null?` · ${m.duration} dias`:''}</span>${urlAnchor(m,'Assistir à partida ↗','match-action')}</div><div class="result-score">${s(m.result)}</div></div>`).join(''):`<div class="empty-message">As partidas concluídas aparecerão aqui.</div>`;
+  byId('recent-matches').innerHTML=current.recent.length?current.recent.map(m=>`<div class="recent-row"><span class="recent-icon">♟</span><div><div class="recent-title">${s(m.white)} <span class="fixture-vs">×</span> ${s(m.black)}</div><span class="recent-sub">Rodada ${m.round} · ${m.end?dateText(m.end):'Data pendente'}${m.duration!==null?` · ${m.duration} dias`:''}</span>${replayButton(m,'match-action')}${urlAnchor(m,'Abrir no Lichess ↗','match-action')}</div><div class="result-score">${s(m.result)}</div></div>`).join(''):`<div class="empty-message">As partidas concluídas aparecerão aqui.</div>`;
 }
 function drawGlory(){
   const h=honors(current);
@@ -87,7 +125,7 @@ function fixtureMarkup(m, showRatings=true){
   const origin=m.lichessDecision?.status==='finished' && m.result?'<span title="Placar confirmado pela API do Lichess">· Resultado Lichess</span>':'';
   const warning=m.lichessDecision?.status==='conflito'?'<span class="lichess-warning" role="status">⚠ Divergência com Lichess; placar da planilha mantido</span>':m.lichessDecision?.status==='ignorado'?'<span class="lichess-warning">⚠ Vínculo Lichess não confirmado</span>':'';
   const dateParts=[m.start?`Início: ${dateText(m.start)}`:'',m.end?`Fim: ${dateText(m.end)}`:'',m.duration!==null?`${m.duration} dias`:'' ].filter(Boolean).join(' · ');
-  return `<div class="fixture-row"><div><div class="fixture-names">${flagSmall(m.white,whiteWon)} <span>${s(formattedName(m.white))}</span>${showRatings?ratingBadge(m.white):''} ${m.black?`<span class="fixture-vs">×</span> ${flagSmall(m.black,blackWon)} <span>${s(formattedName(m.black))}</span>${showRatings?ratingBadge(m.black):''}`:'<span class="fixture-vs">— Folga</span>'}</div><div class="fixture-summary">${chip(m.derivedStatus)}${origin}${warning}<span>${dateParts?s(dateParts):m.derivedStatus==='bye'?'Descansa nesta rodada':`Rodada ${m.round}`}</span></div></div><div class="fixture-action">${score}${m.derivedStatus==='bye'?'':urlAnchor(m)}</div></div>`;
+  return `<div class="fixture-row"><div><div class="fixture-names">${flagSmall(m.white,whiteWon)} <span>${s(formattedName(m.white))}</span>${showRatings?ratingBadge(m.white):''} ${m.black?`<span class="fixture-vs">×</span> ${flagSmall(m.black,blackWon)} <span>${s(formattedName(m.black))}</span>${showRatings?ratingBadge(m.black):''}`:'<span class="fixture-vs">— Folga</span>'}</div><div class="fixture-summary">${chip(m.derivedStatus)}${origin}${warning}<span>${dateParts?s(dateParts):m.derivedStatus==='bye'?'Descansa nesta rodada':`Rodada ${m.round}`}</span></div></div><div class="fixture-action">${score}${m.derivedStatus==='bye'?'':replayButton(m)+urlAnchor(m)}</div></div>`;
 }
 function drawRounds(){
   const rounds=[...new Set(current.matches.map(m=>m.round))].sort((a,b)=>a-b);
@@ -109,6 +147,7 @@ function drawHistory(){
 function renderAll(){drawStats();drawMyBattle();drawLeaders();drawRecent();drawGlory();drawStandings();drawRounds();drawTutorials();drawHistory();}
 async function init(){
   document.addEventListener('click',e=>{
+    const replay=e.target.closest('[data-replay-id]');if(replay){e.preventDefault();openReplay(replay.dataset.replayId);return;}
     const nav=e.target.closest('[data-view]');if(nav){e.preventDefault();showPage(nav.dataset.view);return;}
     const round=e.target.closest('[data-round]');if(round){roundSelected=Number(round.dataset.round);drawRounds();}
     const dev=e.target.closest('[data-device]');if(dev){device=dev.dataset.device;document.querySelectorAll('[data-device]').forEach(b=>{b.classList.toggle('selected',b===dev);b.setAttribute('aria-pressed',String(b===dev));});drawTutorials();}

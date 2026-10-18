@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate,correspondenceRating} from '../js/model.js';
+import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate,correspondenceRating,replayInfo,replayGameId} from '../js/model.js';
 
 const m=(round,white,black,result=null,status='Jogador em outra partida',extra={})=>({round,white,black,result,status,...extra});
 test('Resultado final substitui status antigo de em andamento',()=>{
@@ -176,4 +176,46 @@ test('#5 indisponível sem correspondência e sem perfil validado',()=>{
   assert.equal(correspondenceRating({lichessValidation:{status:'indisponivel'},lichessCorrespondence:{status:'disponivel',rating:1600}}).label,'Corr. —');
   assert.equal(correspondenceRating({}).label,'Corr. —');
   assert.equal(correspondenceRating({lichessValidation:{status:'valido'},lichessCorrespondence:{status:'disponivel',rating:'1600'}}).label,'Corr. —');
+});
+
+
+const replayFixture=(extra={})=>({
+ id:'ed2-r1-l2',round:1,white:'Ana',black:'Bia',status:'Finalizado',result:'1-0',
+ url:'https://lichess.org/Ab12Cd34xYz9',
+ lichessDecision:{status:'manual',reason:'planilha_prevalece'},
+ lichessImport:{status:'ok'},
+ lichessGame:{id:'Ab12Cd34',status:'mate',winner:'white',moves:'e4 e5 Nf3 Nc6'},
+ ...extra,
+});
+test('#6 aceita jogo final validado e preserva URL original de 12 caracteres',()=>{
+ const match=buildTournament({currentRound:1,matches:[replayFixture()]}).finished[0];
+ assert.deepEqual(replayInfo(match),{
+  embedUrl:'https://lichess.org/embed/game/Ab12Cd34?theme=brown&bg=light',
+  gameUrl:'https://lichess.org/Ab12Cd34xYz9',id:'Ab12Cd34'
+ });
+ assert.equal(replayGameId('https://lichess.org/Ab12Cd34'),'Ab12Cd34');
+ assert.equal(replayGameId('https://www.lichess.org/Ab12Cd34/'),'Ab12Cd34');
+});
+test('#6 só usa URLs Lichess de jogo, nunca parâmetros ou esquemas inesperados',()=>{
+ for (const url of ['https://lichess.org/study/Ab12Cd34','https://lichess.org/Ab12Cd34?bad=1',
+ 'https://lichess.org.evil.org/Ab12Cd34','javascript:alert(1)',
+ 'http://lichess.org/Ab12Cd34','https://lichess.org/Ab12Cd34/black',
+ 'https://lichess.org/Ab12Cd34foo','https://lichess.org:8080/Ab12Cd34'])
+  assert.equal(replayGameId(url),null,url);
+});
+test('#6 protege Bye, em andamento e partidas não confirmadas',()=>{
+ const cases=[{result:'bye',status:'Bye'}, {result:null,status:'Em andamento'},
+  {lichessDecision:{status:'playing'}}, {lichessDecision:{status:'ignorado'}},
+  {lichessDecision:{status:'conflito'}}, {lichessDecision:null},
+  {lichessImport:{status:'desatualizado'}}, {lichessImport:{status:'indisponivel'}},
+  {lichessGame:{id:'ZZ22YY11',status:'mate',winner:'white',moves:'e4'}},
+  {lichessGame:{id:'Ab12Cd34',status:'started',winner:null,moves:'e4'}},
+  {lichessGame:{id:'Ab12Cd34',status:'mate',winner:'black',moves:'e4'}},
+  {lichessGame:{id:'Ab12Cd34',status:'mate',winner:'white',moves:''}}];
+ for(const changes of cases) assert.equal(replayInfo(replayFixture(changes)),null,JSON.stringify(changes));
+});
+test('#6 admite vitórias de brancas/pretas e empate apenas quando a API concorda',()=>{
+ assert.ok(replayInfo(replayFixture({result:'0-1',lichessGame:{id:'Ab12Cd34',status:'timeout',winner:'black',moves:'e4 e5'}})));
+ assert.ok(replayInfo(replayFixture({result:'½-½',lichessGame:{id:'Ab12Cd34',status:'draw',winner:null,moves:'e4 e5'}})));
+ assert.equal(replayInfo(replayFixture({result:'1-0',lichessGame:{id:'Ab12Cd34',status:'draw',winner:null,moves:'e4 e5'}})),null);
 });

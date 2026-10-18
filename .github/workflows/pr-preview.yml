@@ -35,6 +35,12 @@ jobs:
       - name: Consultar perfis e rating de correspondencia
         run: python scripts/validate_lichess_players.py
       # Sem segredo LICHESS_API_TOKEN em codigo de PR.
+      - name: Reaproveitar metadados de partidas finalizadas
+        run: python scripts/seed_preview_lichess_cache.py
+      - name: Consultar Lichess anonimamente sem segredos
+        run: python scripts/sync_lichess_games.py
+      - name: Conciliar resultado, jogadores e cores para replay
+        run: python scripts/resolve_lichess_results.py
       - name: Preparar site de teste
         run: |
           mkdir -p _preview/css _preview/js _preview/data

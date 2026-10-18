@@ -114,3 +114,7 @@ O site já calculava duração em dias corridos e apresentava até cinco partida
 ### Melhoria #5 — Rating Lichess de correspondência
 
 A sincronização dos perfis via GitHub Actions também importa exclusivamente `perfs.correspondence.rating`, com indicador `?` se provisório. No site, o selo `Corr. 1620`, `Corr. 1620?` ou `Corr. —` aparece ao lado do jogador; é possível abrir os detalhes por toque, clique ou teclado. Esse rating **não é a pontuação do campeonato**. Consulte `docs/melhoria-05-rating-correspondencia.md`.
+
+### Melhoria #7 — Acompanhamento de jogos em andamento
+
+Jogos efetivamente iniciados e validados pelo Lichess mostram **♟ Acompanhar tabuleiro** nas rodadas e na área do jogador. O tabuleiro é um visualizador incorporado, sem comandos para realizar lances no site. Ele pode ter atraso de lances por prevenção a trapaças. O site informa a última consulta à API e marca dados antigos. O link **Abrir no Lichess** continua disponível, inclusive para partidas privadas. Confira `docs/melhoria-07-acompanhar-jogos.md`.

@@ -123,6 +123,10 @@ export function buildTournament(tournament){
   for(const m of decorated) if(m.lichessDecision?.status==='ignorado') alerts.push(`Rodada ${m.round}: ${m.white} × ${m.black} — dados Lichess não aplicados (${m.lichessDecision.reason}).`);
   return {...tournament,currentRound,matches:decorated,standings,finished,ongoing,ready,pending,recent,recentVerified:withDates.length>0,alerts,total:regular.length,byes:decorated.filter(m=>m.derivedStatus==='bye').length};
 }
+/** #7: os dez primeiros confrontos em andamento na ordem da planilha. */
+export function homeActiveMatches(tournament) {
+  return (tournament?.matches || []).filter(m=>m.derivedStatus==='playing').slice(0,10);
+}
 export function playerMatches(t,name){
   if(!name)return [];
   return t.matches.filter(m=>m.derivedStatus!=='bye' && (m.white===name || m.black===name));

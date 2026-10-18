@@ -1,4 +1,4 @@
-import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo} from './model.js';
+import {buildTournament,nextMatches,honors,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches} from './model.js';
 import {activeBoardInfo} from './live.js';
 const dataUrl='./data/campeonatos.json';
 const storageKey='reinos-xadrez-jogador';
@@ -126,6 +126,19 @@ function drawRecent(){
   byId('recent-notice').textContent=current.recentVerified?'Ordenadas pela data de fim. Datas automáticas do Lichess são referências de criação e último lance, não instantes exatos.':'Datas de término ainda não informadas: exibindo as últimas linhas finalizadas da planilha, sem ordem cronológica garantida.';
   byId('recent-matches').innerHTML=current.recent.length?current.recent.map(m=>`<div class="recent-row"><span class="recent-icon">♟</span><div><div class="recent-title">${s(m.white)} <span class="fixture-vs">×</span> ${s(m.black)}</div><span class="recent-sub">Rodada ${m.round} · ${m.end?dateText(m.end):'Data pendente'}${m.duration!==null?` · ${m.duration} dias`:''}</span>${replayButton(m,'match-action')}${urlAnchor(m,'Abrir no Lichess ↗','match-action')}</div><div class="result-score">${s(m.result)}</div></div>`).join(''):`<div class="empty-message">As partidas concluídas aparecerão aqui.</div>`;
 }
+function drawOngoing(){
+  const matches=homeActiveMatches(current);
+  const total=current.ongoing.length;
+  byId('ongoing-notice').textContent=total===0
+    ? 'Nenhum confronto em andamento no momento.'
+    : total>10
+      ? `Exibindo os 10 primeiros de ${total} confrontos em andamento, na ordem da planilha.`
+      : `${total} confronto${total===1?'':'s'} em andamento, na ordem da planilha.`;
+  byId('ongoing-matches').innerHTML=matches.length?matches.map(m=>{
+    const activeInfo=activeBoardInfo(m);
+    return `<div class="recent-row ongoing-row"><span class="recent-icon" aria-hidden="true">♟</span><div class="ongoing-row-content"><div class="recent-title">${s(m.white)} <span class="fixture-vs">×</span> ${s(m.black)}</div><span class="recent-sub">Rodada ${m.round}${m.start?` · Início: ${dateText(m.start)}`:''}</span>${liveSyncNote(activeInfo)}${watchButton(m,'match-action')}${urlAnchor(m,'Abrir no Lichess ↗','match-action')}</div><span class="status-chip status-playing">Em andamento</span></div>`;
+  }).join(''):'<div class="empty-message">As partidas iniciadas aparecerão aqui.</div>';
+}
 function drawGlory(){
   const h=honors(current);
   const preview=[{icon:'♛',name:'O Conquistador',sub:h.mostWins?`${h.mostWins.name} · ${h.mostWins.wins} vitórias`:'Aguardando resultados'},{icon:'♜',name:'O Grande Cerco',sub:h.longest?`${h.longest.white} × ${h.longest.black} · ${h.longest.duration} dias`:'Aguardando datas das partidas'}];
@@ -170,7 +183,7 @@ function drawHistory(){
   const winner=archive.standings[0];
   node.innerHTML=`<article class="history-card"><div class="history-title-row"><span class="seal">♛</span><div><h2>${s(archive.title)}</h2><p>${s(archive.subtitle)} · ${archive.finished.length} partidas disputadas · ${archive.standings.length} participantes</p></div></div><div class="history-highlight"><span class="crown">♛</span><div><strong>Campeão: ${s(winner?.name||'Não definido')}</strong><small>${winner?`${number(winner.points)} pontos · ${winner.wins} vitórias`:''}</small></div></div>${standingsMarkup(archive)}<details style="margin-top:22px"><summary style="cursor:pointer;color:#8c692e;font-weight:700">Ver as partidas desta edição</summary><div style="margin-top:10px">${archive.matches.filter(m=>m.derivedStatus!=='bye').map(m=>fixtureMarkup(m,false)).join('')}</div></details></article>`;
 }
-function renderAll(){drawStats();drawMyBattle();drawLeaders();drawRecent();drawGlory();drawStandings();drawRounds();drawTutorials();drawHistory();}
+function renderAll(){drawStats();drawMyBattle();drawLeaders();drawRecent();drawOngoing();drawGlory();drawStandings();drawRounds();drawTutorials();drawHistory();}
 async function init(){
   document.addEventListener('click',e=>{
     const replay=e.target.closest('[data-replay-id]');if(replay){e.preventDefault();openReplay(replay.dataset.replayId);return;}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate,correspondenceRating,replayInfo,replayGameId} from '../js/model.js';
+import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate,correspondenceRating,replayInfo,replayGameId,homeActiveMatches} from '../js/model.js';
 
 const m=(round,white,black,result=null,status='Jogador em outra partida',extra={})=>({round,white,black,result,status,...extra});
 test('Resultado final substitui status antigo de em andamento',()=>{
@@ -218,4 +218,25 @@ test('#6 admite vitórias de brancas/pretas e empate apenas quando a API concord
  assert.ok(replayInfo(replayFixture({result:'0-1',lichessGame:{id:'Ab12Cd34',status:'timeout',winner:'black',moves:'e4 e5'}})));
  assert.ok(replayInfo(replayFixture({result:'½-½',lichessGame:{id:'Ab12Cd34',status:'draw',winner:null,moves:'e4 e5'}})));
  assert.equal(replayInfo(replayFixture({result:'1-0',lichessGame:{id:'Ab12Cd34',status:'draw',winner:null,moves:'e4 e5'}})),null);
+});
+
+test('Início: confrontos ativos seguem a ordem da planilha, limitados a 10',()=>{
+ const matches=[];
+ for(let i=1;i<=14;i++) {
+   if(i===2) matches.push(m(i,'Ana',null,'bye','Bye',{id:`row-${i}`}));
+   else if(i===6) matches.push(m(i,'Ana','Bia','1-0','Finalizado',{id:`row-${i}`}));
+   else matches.push(m(i,`Jogador${i}`,`Adversario${i}`,null,'Em andamento',{id:`row-${i}`}));
+ }
+ const t=buildTournament({matches});
+ assert.equal(t.ongoing.length,12);
+ const first=homeActiveMatches(t);
+ assert.equal(first.length,10);
+ assert.deepEqual(first.map(x=>x.id), ['row-1','row-3','row-4','row-5','row-7','row-8','row-9','row-10','row-11','row-12']);
+ assert.equal(t.ongoing.length,12); // não modifica nem reordena a fonte
+});
+test('Início: lista vazia e menos de dez partidas são tratados corretamente',()=>{
+ assert.deepEqual(homeActiveMatches(null), []);
+ assert.deepEqual(homeActiveMatches(buildTournament({matches:[]})), []);
+ const t=buildTournament({matches:[m(4,'Bia','Ana',null,'Em andamento',{id:'fourth'}),m(1,'Ana','Bia',null,'Em andamento',{id:'first'})]});
+ assert.deepEqual(homeActiveMatches(t).map(x=>x.id),['fourth','first']);
 });

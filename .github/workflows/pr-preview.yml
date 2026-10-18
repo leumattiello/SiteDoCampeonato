@@ -93,13 +93,18 @@ jobs:
           publish_branch: pr-preview-${{ github.event.pull_request.number }}
           publish_dir: ./_preview
           force_orphan: true
-      - name: Exibir link da previa
+      - name: Exibir link versionado da previa sem cache antigo
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          set -euo pipefail
+          PREVIEW_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/pr-preview-${PR_NUMBER}" --jq '.object.sha')"
+          test -n "$PREVIEW_SHA"
           echo '## Abrir previa navegavel' >> "$GITHUB_STEP_SUMMARY"
-          echo "[Visualizar PR #${PR_NUMBER}](https://raw.githack.com/leumattiello/SiteDoCampeonato/pr-preview-${PR_NUMBER}/index.html)" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Servico gratuito externo, com cache e possivel confirmacao de acesso; nao e o GitHub Pages oficial.' >> "$GITHUB_STEP_SUMMARY"
+          echo "[Visualizar PR #${PR_NUMBER} — versão ${PREVIEW_SHA:0:7}](https://raw.githack.com/${GITHUB_REPOSITORY}/${PREVIEW_SHA}/index.html)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Endereço exclusivo desta publicação: HTML, JavaScript e JSON do mesmo commit. Não reutilize a URL antiga da branch." >> "$GITHUB_STEP_SUMMARY"
+          echo 'Hospedado por serviço externo, não GitHub Pages oficial.' >> "$GITHUB_STEP_SUMMARY"
   limpar:
     if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest

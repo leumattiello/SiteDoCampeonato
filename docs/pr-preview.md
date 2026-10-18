@@ -19,3 +19,7 @@ Teste o selo Corr. no desktop e celular, por clique, toque e teclado. O sinal ? 
 - Uma branch exclusiva pr-preview-N recebe os arquivos já validados. Ao fechar o PR, a limpeza tenta apagar essa branch.
 - raw.githack.com é um serviço gratuito de terceiros para prévias; pode apresentar uma tela de confirmação e manter cache de alguns minutos. Não é hospedagem de produção.
 - Se uma consulta ao Google Sheets falhar, a publicação da prévia é interrompida, em vez de mostrar dados de exemplo como atuais.
+
+## Prévia sem cache antigo
+
+Depois de cada atualização, abra o link **versionado pelo SHA da branch de prévia** apresentado no Summary do job `publicar`. Não reutilize o endereço `pr-preview-N/index.html`: o serviço raw.githack pode conservar versões antigas nessa URL. O endereço com SHA aponta para uma única publicação, com HTML, JavaScript e JSON do mesmo commit. A página de produção não é afetada.

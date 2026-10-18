@@ -167,3 +167,41 @@ export function correspondenceRating(player) {
   const games=Number.isInteger(corr.games) && corr.games>=0 ? corr.games : null;
   return {label:`Corr. ${rating}${provisional?'?':''}`,value:rating,provisional,games};
 }
+
+/** #6 — Somente partidas finalizadas e conferidas pela reconciliação #3.
+ * Os 4 caracteres adicionais de links privados são preservados no link original,
+ * mas nunca são enviados ao endpoint público de incorporação.
+ */
+export function replayGameId(url) {
+  if (typeof url !== 'string') return null;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' || !['lichess.org','www.lichess.org'].includes(u.hostname)
+        || u.port || u.username || u.password || u.search) return null;
+    const match = /^\/([A-Za-z0-9]{8})(?:[A-Za-z0-9]{4})?\/?$/.exec(u.pathname);
+    return match ? match[1] : null;
+  } catch { return null; }
+}
+
+export function replayInfo(m) {
+  if (!m || getResult(m)==='bye' || !['1-0','0-1','½-½'].includes(getResult(m))) return null;
+  // As decisões manual/finished só são dadas após verificar ID, jogadores e cores.
+  if (!['finished','manual'].includes(m.lichessDecision?.status)) return null;
+  if (!['ok','cache'].includes(m.lichessImport?.status)) return null;
+  const game = m.lichessGame;
+  const id = replayGameId(m.url);
+  if (!id || !game || String(game.id||'').toLowerCase()!==id.toLowerCase()) return null;
+  // Evita replay da partida errada/que ainda não terminou.
+  const state=String(game.status||'').toLowerCase();
+  let apiResult=null;
+  if (['draw','stalemate'].includes(state) && game.winner == null) apiResult='½-½';
+  else if (['mate','resign','timeout','outoftime','cheat','variantend','unknownfinish'].includes(state)) {
+    apiResult=game.winner==='white'?'1-0':game.winner==='black'?'0-1':null;
+  }
+  if (!apiResult || apiResult!==getResult(m) || typeof game.moves!=='string' || !game.moves.trim()) return null;
+  return {
+    embedUrl:`https://lichess.org/embed/game/${id}?theme=brown&bg=light`,
+    gameUrl:validLichessUrl(m.url),
+    id,
+  };
+}

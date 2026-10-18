@@ -14,6 +14,10 @@ O widget lista participantes, critérios, métricas e partidas, com links Liches
 
 ## Tronos regionais
 
-Onze títulos: Rei da Sicília (Siciliana), Rei da Itália (Giuoco Piano/Pianissimo), Rei da Espanha (Ruy Lopez), Rei da Inglaterra (Inglesa), Rei das Índias (Índia do Rei/da Dama), Rei da França (Francesa), Tzar da Rússia (Petrov), Arquiduque da Áustria (Vienense), Lorde da Escócia (Scotch Game), Imperador da Escandinávia (Escandinava) e Conde da Holanda (Holandesa).
+Onze títulos: Rei da Sicília (Siciliana), Rei da Itália (toda a Abertura Italiana, incluindo Giuoco Piano/Pianissimo, Defesa dos Dois Cavalos, Gambito Evans e Fegatello/Fried Liver Attack), Rei da Espanha (Ruy Lopez), Rei da Inglaterra (Inglesa), Rei das Índias (Índia do Rei/da Dama), Rei da França (Francesa), Tzar da Rússia (Petrov), Arquiduque da Áustria (Vienense), Lorde da Escócia (Scotch Game), Imperador da Escandinávia (Escandinava) e Conde da Holanda (Holandesa).
 
 Cada título conta **vitórias** em partidas encerradas com abertura validada pelo Lichess. O nome explícito da abertura tem precedência; ECO é fallback quando o nome não está presente. Empates distribuem a coroa a todos os líderes. Cada medalha utiliza uma silhueta cartográfica estilizada em SVG local. Títulos sem vitórias permanecem sem conquistador. Não há rótulo de «provisória» no site.
+
+### Ampliação do Rei da Itália
+
+São aceitas todas as variantes da família **Abertura Italiana**, incluindo **Giuoco Piano/Pianissimo**, **Defesa dos Dois Cavalos**, **Gambito Evans** e **Fegatello / Fried Liver Attack**. A identificação usa o nome verificado pelo Lichess (por exemplo, `Italian Game: Two Knights Defense, Fried Liver Attack`) e, na ausência de nome, a faixa **ECO C50–C59**. Se houver nome explícito, ele prevalece sobre ECO para evitar misturar outras famílias. Só vitórias entram na contagem; empates na liderança dividem a honraria.

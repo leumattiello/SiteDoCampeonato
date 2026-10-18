@@ -19,7 +19,7 @@ netherlands:"M43.8,13.7 L55,14.1 L57.5,18.7 L54.1,31 L50.7,36.1 L42.6,36.1 L44.9
    sobre faixas ECO largas que também contêm outras variantes. */
 export const REGIONS=Object.freeze([
  {key:'sicily',name:'Rei da Sicília',label:'Sicília',family:'Defesa Siciliana',range:['B',20,99],namePattern:/\bsicilian\b/},
- {key:'italy',name:'Rei da Itália',label:'Itália',family:'Giuoco Piano / Giuoco Pianissimo',range:['C',50,54],namePattern:/\bgiuoco pian(?:o|issimo)\b/},
+ {key:'italy',name:'Rei da Itália',label:'Itália',family:'Abertura Italiana (inclui Giuoco Piano, Dois Cavalos e Fegatello)',range:['C',50,59],namePattern:/\b(?:italian (?:game|opening)|giuoco pian(?:o|issimo)|two knights defen[cs]e|fried liver attack|fegatello(?: attack)?|evans gambit)\b/},
  {key:'spain',name:'Rei da Espanha',label:'Espanha',family:'Ruy Lopez / Abertura Espanhola',range:['C',60,99],namePattern:/\b(?:ruy lopez|spanish (?:game|opening))\b/},
  {key:'england',name:'Rei da Inglaterra',label:'Inglaterra',family:'Abertura Inglesa',range:['A',10,39],namePattern:/\benglish opening\b/},
  {key:'india',name:'Rei das Índias',label:'Índias',family:'Defesa Índia do Rei / Índia da Dama',ranges:[['E',12,19],['E',60,99]],namePattern:/\b(?:king|queen)s? indian\b(?!\s+attack)/},

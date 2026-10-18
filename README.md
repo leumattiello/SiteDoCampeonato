@@ -118,3 +118,8 @@ A sincronização dos perfis via GitHub Actions também importa exclusivamente `
 ### Melhoria #7 — Acompanhamento de jogos em andamento
 
 Jogos efetivamente iniciados e validados pelo Lichess mostram **♟ Acompanhar tabuleiro** nas rodadas e na área do jogador. O tabuleiro é um visualizador incorporado, sem comandos para realizar lances no site. Ele pode ter atraso de lances por prevenção a trapaças. O site informa a última consulta à API e marca dados antigos. O link **Abrir no Lichess** continua disponível, inclusive para partidas privadas. Confira `docs/melhoria-07-acompanhar-jogos.md`.
+
+
+### Melhoria #8 — Aberturas, lances e término
+
+Confrontos exibem abertura pública identificada pelo Lichess, número de lances individuais e pares completos e forma de término, somente com partida verificada. Partidas em andamento podem estar atrasadas; dados ausentes não são inventados. Consulte `docs/melhoria-08-aberturas-e-lances.md`.

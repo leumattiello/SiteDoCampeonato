@@ -3,6 +3,7 @@ import {activeBoardInfo} from './live.js';
 import {gameStats} from './game-stats.js';
 import {gloryAwards} from './glory.js';
 import {REGION_MAPS} from './regions.js';
+import {editionChampion,editionRivalries,interEditionRivalries} from './history.js';
 const dataUrl='./data/campeonatos.json';
 const storageKey='reinos-xadrez-jogador';
 let store=null, current=null, archive=null, selected='', activePage='inicio', roundSelected=4, device='celular';
@@ -217,10 +218,43 @@ const tutorials=[
 ];
 function drawTutorials(){byId('tutorial-content').innerHTML=tutorials.map((t,i)=>`<article class="tutorial"><div class="tutorial-head"><div class="tutorial-icon">${t.icon}</div><div><h2>${s(t.title)}</h2><div class="subtitle">${s(t.sub)}</div></div></div><details ${i===0?'open':''}><summary>Ver instruções passo a passo</summary><ol>${t[device].map(step=>`<li>${s(step)}</li>`).join('')}</ol>${i===0?'<a class="action-link" href="https://lichess.org" target="_blank" rel="noopener noreferrer">Abrir o Lichess ↗</a>':''}</details></article>`).join('');}
 function drawHistory(){
-  const node=byId('history-content');
-  if(!archive){node.innerHTML='<div class="empty-message">Nenhuma edição anterior encontrada.</div>';return;}
-  const winner=archive.standings[0];
-  node.innerHTML=`<article class="history-card"><div class="history-title-row"><span class="seal">♛</span><div><h2>${s(archive.title)}</h2><p>${s(archive.subtitle)} · ${archive.finished.length} partidas disputadas · ${archive.standings.length} participantes</p></div></div><div class="history-highlight"><span class="crown">♛</span><div><strong>Campeão: ${s(winner?.name||'Não definido')}</strong><small>${winner?`${number(winner.points)} pontos · ${winner.wins} vitórias`:''}</small></div></div>${standingsMarkup(archive)}<details style="margin-top:22px"><summary style="cursor:pointer;color:#8c692e;font-weight:700">Ver as partidas desta edição</summary><div style="margin-top:10px">${archive.matches.filter(m=>m.derivedStatus!=='bye').map(m=>fixtureMarkup(m,false)).join('')}</div></details></article>`;
+  const root=byId('history-content');
+  const editions=(store?.tournaments||[]).map(t=>t.active?current:buildTournament(t));
+  const archived=editions.filter(t=>!t.active);
+  if(!archived.length){root.innerHTML='<div class="empty-message">Nenhuma edição anterior encontrada.</div>';return;}
+  const refs=games=>'<ul class="history-game-list">'+games.map(g=>{
+    const m=g.match||g;
+    const label=(g.editionTitle?g.editionTitle+' · ':'')+'R'+m.round+': '+m.white+' × '+m.black+' · '+m.result;
+    const href=validLichessUrl(m.url);
+    return '<li>'+(href?'<a href="'+s(href)+'" target="_blank" rel="noopener noreferrer">'+s(label)+' ↗</a>':s(label))+'</li>';
+  }).join('')+'</ul>';
+  const pairCard=pair=>'<article class="history-rivalry"><strong>'+s(pair.left)+' × '+s(pair.right)+'</strong>'+
+    '<p>'+pair.count+' confrontos · '+s(pair.left)+': '+pair.firstWins+' vitória(s) · '+s(pair.right)+': '+pair.secondWins+' vitória(s) · '+pair.draws+' empate(s)</p>'+
+    '<details><summary>Ver confrontos ('+pair.count+')</summary>'+refs(pair.games)+'</details></article>';
+  const cross=interEditionRivalries(editions,store?.players);
+  const crossMarkup='<section class="history-section"><h2>Rivalidades entre edições</h2>'+
+    '<p class="history-helper">Somente adversários que se enfrentaram em mais de uma edição e foram identificados com nicks verificados na aba Jogadores. Resultados seguem separados por edição.</p>'+
+    (cross.length?'<div class="history-rivalries">'+cross.map(pairCard).join('')+'</div>':
+      '<div class="empty-message">Ainda não há duelos entre edições com ambos os jogadores identificados de forma confiável.</div>')+'</section>';
+  const previous=archived.map(t=>{
+    const title=t.title||'Edição anterior';
+    const champion=editionChampion(t);
+    const titleText=champion.state==='champion'?'Campeão: '+champion.leaders[0]:
+      champion.state==='tie'?'Liderança empatada — campeão não definido pelo regulamento':
+      'Campeão ainda não confirmado';
+    const points=champion.points===null?'Dados de classificação incompletos':
+      champion.leaders.join(' · ')+' · '+number(champion.points)+' pontos';
+    const rivals=editionRivalries(t);
+    return '<article class="history-card"><div class="history-title-row"><span class="seal">♛</span><div><h2>'+s(title)+'</h2><p>'+
+      s(t.subtitle||'Edição encerrada')+' · '+t.finished.length+' partidas disputadas · '+t.standings.length+' participantes</p></div></div>'+
+      '<div class="history-highlight"><span class="crown">♛</span><div><strong>'+s(titleText)+'</strong><small>'+s(points)+'</small></div></div>'+
+      standingsMarkup(t)+
+      '<section class="history-section"><h3>Rivalidades desta edição</h3><p class="history-helper">Retrospecto restrito aos nomes e resultados desta edição.</p>'+
+      (rivals.length?'<div class="history-rivalries">'+rivals.map(pairCard).join('')+'</div>':'<p>Sem confrontos finalizados.</p>')+'</section>'+
+      '<details class="history-matches"><summary>Ver todas as partidas desta edição</summary><div>'+t.matches.filter(m=>m.derivedStatus!=='bye').map(m=>fixtureMarkup(m,false)).join('')+'</div></details></article>';
+  }).join('');
+  root.innerHTML='<p class="history-helper">O campeonato atual continua em destaque nas páginas Início e Tabela. Aqui estão as edições já encerradas.</p>'+
+    crossMarkup+previous;
 }
 function renderAll(){drawStats();drawMyBattle();drawLeaders();drawRecent();drawOngoing();drawGlory();drawStandings();drawRounds();drawTutorials();drawHistory();}
 async function init(){

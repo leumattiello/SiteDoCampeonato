@@ -6,7 +6,7 @@ NOW=datetime(2026,10,20,tzinfo=timezone.utc)
 def payload():
     return {"tournaments":[{"id":"atual","active":True,"matches":[
       {"id":"a","round":2,"white":"Ana","black":"Bia","status":"Em andamento","result":None,"url":None,"start":"2026-10-10"},
-      {"id":"b","round":1,"white":"Ana","black":"Carol","status":"Finalizado","result":"1-0","url":"https://lichess.org/ABCDEFGH","start":"2026-10-01"}]}],
+      {"id":"b","round":1,"white":"Ana","black":"Carol","status":"Finalizado","result":"1-0","url":"https://lichess.org/LMNOPQRS","start":"2026-10-01"}]}],
       "players":[{"name":n,"lichess":uid,"lichessValidation":{"status":"valido","id":uid.lower()}} for n,uid in [("Ana","ana123"),("Bia","bia123"),("Carol","carol123")]]}
 def game(id="abcdefgh",white="ana123",black="bia123",days=1,perf="correspondence",status="started"):
     return {"id":id,"players":{"white":{"user":{"id":white}},"black":{"user":{"id":black}}},
@@ -21,7 +21,7 @@ class SuggestionsTest(unittest.TestCase):
         self.assertIsNone(p["tournaments"][0]["matches"][0]["url"])
     def test_ignores_wrong_colors_and_linked(self):
         p=payload()
-        x=candidate_matches(p,lookup=lambda nick,since:[game(white="bia123",black="ana123"),game(id="ABCDEFGH")],now=NOW)
+        x=candidate_matches(p,lookup=lambda nick,since:[game(white="bia123",black="ana123"),game(id="LMNOPQRS")],now=NOW)
         self.assertEqual(x["candidates"],[])
     def test_requires_correspondence_and_correct_time(self):
         for change in [{"perf":"blitz"},{"daysPerTurn":3},{"status":"created"}]:

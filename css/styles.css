@@ -135,3 +135,6 @@
 
 /* #11: lista de partidas aptas em Rodadas */
 .eligible-start-panel{margin-bottom:20px}.eligible-help{font-size:12px;line-height:1.7;color:#746955;margin:7px 0 18px}.eligible-count{font-size:11px;font-weight:700;color:#385d46}.eligible-start-item{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;border-top:1px solid #e2d8c7}.eligible-start-item strong{font-size:13px}.eligible-start-item p{margin:5px 0;font-size:11px;color:#746955}.eligible-start-note{display:block;max-width:640px;color:#825d31;font-size:11px;margin-top:5px}.eligible-start-item button{flex-shrink:0}@media(max-width:600px){.eligible-start-item{align-items:flex-start;flex-direction:column}}
+
+/* #12 — ajuda contextual acessível no próximo confronto */
+.context-help{margin:13px 0;padding:14px 16px;background:#f2e8d5;border:1px solid #dfcdab;border-left:4px solid #a9874b}.context-help>strong{font-size:13px;color:#544629}.context-help p{font-size:12px;line-height:1.7;margin:8px 0}.context-help-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.context-help-actions .button{padding:9px 12px;font-size:11px}.context-help small,.context-muted{font-size:11px;color:#766e61}

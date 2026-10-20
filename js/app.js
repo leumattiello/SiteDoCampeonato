@@ -1,4 +1,4 @@
-import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches} from './model.js';
+import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches,eligibleToStart,alternativeStartPlayers} from './model.js';
 import {activeBoardInfo} from './live.js';
 import {gameStats} from './game-stats.js';
 import {gloryAwards,featuredGloryAwards} from './glory.js';
@@ -207,7 +207,20 @@ function fixtureMarkup(m, showRatings=true){
   const activeInfo=activeBoardInfo(m);
   return `<div class="fixture-row"><div><div class="fixture-names">${flagSmall(m.white,whiteWon)} <span>${s(formattedName(m.white))}</span>${showRatings?ratingBadge(m.white):''} ${m.black?`<span class="fixture-vs">×</span> ${flagSmall(m.black,blackWon)} <span>${s(formattedName(m.black))}</span>${showRatings?ratingBadge(m.black):''}`:'<span class="fixture-vs">— Folga</span>'}</div><div class="fixture-summary">${chip(m.derivedStatus)}${origin}${warning}<span>${dateParts?s(dateParts):m.derivedStatus==='bye'?'Descansa nesta rodada':`Rodada ${m.round}`}</span>${liveSyncNote(activeInfo)}${gameStatsMarkup(m)}</div></div><div class="fixture-action">${score}${m.derivedStatus==='bye'?'':replayButton(m)+watchButton(m)+urlAnchor(m)}</div></div>`;
 }
+function drawEligibleStarts(){
+  const matches=eligibleToStart(current);
+  const alternatives=alternativeStartPlayers(matches);
+  byId('eligible-start-count').textContent=matches.length+' confronto'+(matches.length===1?'':'s')+' apto'+(matches.length===1?'':'s');
+  byId('eligible-start-content').innerHTML=matches.length?matches.map(m=>{
+    const shared=alternatives.has(m.white)||alternatives.has(m.black);
+    return '<article class="eligible-start-item"><div><strong>Rodada '+s(m.round)+': '+s(formattedName(m.white))+' × '+s(formattedName(m.black))+'</strong>'+
+      '<p>Brancas: '+s(m.white)+' · Pretas: '+s(m.black)+'</p>'+
+      (shared?'<small class="eligible-start-note">⚠ Opção alternativa: há outra partida apta com pelo menos um destes jogadores. Somente uma pode ser iniciada por vez.</small>':'')+
+      '</div><button type="button" class="button button-light" data-round="'+s(m.round)+'" data-view="rodadas">Ver rodada ›</button></article>';
+  }).join(''):'<div class="empty-message">Nenhum confronto está liberado para começar no momento.</div>';
+}
 function drawRounds(){
+  drawEligibleStarts();
   const rounds=[...new Set(current.matches.map(m=>m.round))].sort((a,b)=>a-b);
   byId('round-buttons').innerHTML=rounds.map(r=>`<button type="button" class="round-button ${r===roundSelected?'current':''}" data-round="${r}" aria-pressed="${r===roundSelected}">R${r}</button>`).join('');
   const round=current.matches.filter(m=>m.round===roundSelected);

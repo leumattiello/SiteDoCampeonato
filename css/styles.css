@@ -132,3 +132,6 @@
 
 /* Melhoria #11: sugestões somente leitura */
 .suggestion-note{font-size:13px;line-height:1.7;margin-bottom:15px;color:#5d573f}.suggestion-alert{font-size:12px;color:#85572d;padding:10px;background:#f5ead7;margin:8px 0}.suggestion-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.suggestion-card{padding:17px;border:1px solid #dacbb1;background:#faf6ed}.suggestion-card h3{font-size:15px;color:#4b4636}.suggestion-card p{font-size:12px;margin:9px 0}.suggestion-actions{display:flex;gap:8px;flex-wrap:wrap}.suggestion-actions .button{font-size:11px;padding:8px 12px}@media(max-width:730px){.suggestion-list{grid-template-columns:1fr}}
+
+/* #11: lista de partidas aptas em Rodadas */
+.eligible-start-panel{margin-bottom:20px}.eligible-help{font-size:12px;line-height:1.7;color:#746955;margin:7px 0 18px}.eligible-count{font-size:11px;font-weight:700;color:#385d46}.eligible-start-item{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;border-top:1px solid #e2d8c7}.eligible-start-item strong{font-size:13px}.eligible-start-item p{margin:5px 0;font-size:11px;color:#746955}.eligible-start-note{display:block;max-width:640px;color:#825d31;font-size:11px;margin-top:5px}.eligible-start-item button{flex-shrink:0}@media(max-width:600px){.eligible-start-item{align-items:flex-start;flex-direction:column}}

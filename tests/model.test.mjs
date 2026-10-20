@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate,correspondenceRating,replayInfo,replayGameId,homeActiveMatches} from '../js/model.js';
+import {buildTournament,nextMatches,parseDate,durationDays,honors,validLichessUrl,byeScore,resolveMatchDates,lichessLocalDate,correspondenceRating,replayInfo,replayGameId,homeActiveMatches,eligibleToStart,alternativeStartPlayers} from '../js/model.js';
 
 const m=(round,white,black,result=null,status='Jogador em outra partida',extra={})=>({round,white,black,result,status,...extra});
 test('Resultado final substitui status antigo de em andamento',()=>{
@@ -239,4 +239,53 @@ test('Início: lista vazia e menos de dez partidas são tratados corretamente',(
  assert.deepEqual(homeActiveMatches(buildTournament({matches:[]})), []);
  const t=buildTournament({matches:[m(4,'Bia','Ana',null,'Em andamento',{id:'fourth'}),m(1,'Ana','Bia',null,'Em andamento',{id:'first'})]});
  assert.deepEqual(homeActiveMatches(t).map(x=>x.id),['fourth','first']);
+});
+
+test('#11: lista partidas aptas em ordem da planilha, inclusive rodada de referência + 1',()=>{
+ const t=buildTournament({currentRound:4,matches:[
+  m(4,'Ana','Bia',null,'Jogador em outra partida',{id:'a'}),
+  m(5,'Carol','Dora',null,'Jogador em outra partida',{id:'b'}),
+  m(6,'Eva','Fabio',null,'Jogador em outra partida',{id:'c'}),
+  m(1,'Gabriel',null,'bye','Bye',{id:'bye'}),
+  m(3,'Igor','Joana','1-0','Finalizado',{id:'done'}),
+ ]});
+ assert.deepEqual(eligibleToStart(t).map(m=>m.id),['a','b']);
+ assert.equal(t.ready.length,2);
+});
+test('#11: jogador ocupado bloqueia rodadas atuais e seguintes',()=>{
+ const t=buildTournament({currentRound:3,matches:[
+  m(3,'Ana','Bia',null,'Em andamento',{id:'active'}),
+  m(3,'Ana','Carlos',null,'Jogador em outra partida',{id:'busy-a'}),
+  m(4,'Bia','Dora',null,'Jogador em outra partida',{id:'busy-b'}),
+  m(4,'Eva','Fabio',null,'Jogador em outra partida',{id:'free'}),
+ ]});
+ assert.deepEqual(eligibleToStart(t).map(m=>m.id),['free']);
+});
+test('#11: aguardando resultado final não libera prematuramente seus jogadores',()=>{
+ const t=buildTournament({currentRound:4,matches:[
+   m(4,'Ana','Bia',null,'Finalizado',{id:'unconfirmed'}),
+   m(5,'Ana','Carol',null,'Jogador em outra partida',{id:'future'}),
+   m(5,'Dora','Enrico',null,'Jogador em outra partida',{id:'ready'}),
+ ]});
+ assert.deepEqual(eligibleToStart(t).map(m=>m.id),['ready']);
+});
+test('#11: não oferece criar partida já vinculada ou fora da janela permitida',()=>{
+ const t=buildTournament({currentRound:2,matches:[
+  m(2,'Ana','Bia',null,'Jogador em outra partida',{id:'linked',url:'https://lichess.org/Ab12Cd34'}),
+  m(3,'Carol','Dora',null,'Jogador em outra partida',{id:'free'}),
+  m(4,'Eva','Fabio',null,'Jogador em outra partida',{id:'blocked'}),
+ ]});
+ assert.deepEqual(eligibleToStart(t).map(m=>m.id),['free']);
+});
+test('#11: opções compartilhadas são alternativas, não partidas simultâneas',()=>{
+ const t=buildTournament({currentRound:4,matches:[
+  m(4,'Ana','Bia',null,'Jogador em outra partida',{id:'a'}),
+  m(5,'Ana','Carol',null,'Jogador em outra partida',{id:'b'}),
+  m(5,'Dora','Eva',null,'Jogador em outra partida',{id:'c'}),
+ ]});
+ const list=eligibleToStart(t);
+ assert.equal(list.length,3);
+ assert.deepEqual([...alternativeStartPlayers(list)],['Ana']);
+ assert.equal(eligibleToStart(null).length,0);
+ assert.equal(eligibleToStart({...t,active:false}).length,0);
 });

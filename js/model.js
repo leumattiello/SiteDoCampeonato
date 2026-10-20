@@ -127,6 +127,39 @@ export function buildTournament(tournament){
 export function homeActiveMatches(tournament) {
   return (tournament?.matches || []).filter(m=>m.derivedStatus==='playing').slice(0,10);
 }
+/** Confrontos que PODEM iniciar agora, pelas informações oficiais importadas.
+ * A elegibilidade é individual: alternativas com jogador compartilhado não
+ * podem ser iniciadas simultaneamente. Os confrontos devem seguir a cor definida
+ * pela tabela Schuring e ter até uma rodada além da rodada de referência.
+ */
+export function eligibleToStart(t) {
+  if (!t || t.active===false || !Array.isArray(t.matches)) return [];
+  const reference=Number(t.currentRound);
+  if (!Number.isInteger(reference) || reference<1) return [];
+  const occupied=new Set();
+  // Não concluir que alguém ficou livre se o resultado foi marcado como
+  // Finalizado mas os pontos ainda estão ausentes/inconsistentes.
+  for(const m of t.matches){
+    if(['playing','missing-result'].includes(m.derivedStatus)){
+      if(m.white) occupied.add(m.white);
+      if(m.black) occupied.add(m.black);
+    }
+  }
+  return t.matches.filter(m=>
+    m.derivedStatus==='ready' &&
+    Number.isInteger(m.round) && m.round>=1 && m.round<=reference+1 &&
+    typeof m.white==='string' && !!m.white.trim() &&
+    typeof m.black==='string' && !!m.black.trim() && m.white!==m.black &&
+    !m.result && !(typeof m.url==='string' ? m.url.trim() : m.url) &&
+    !occupied.has(m.white) && !occupied.has(m.black));
+}
+/** Participantes presentes em mais de uma opção, sem liberar simultaneidade. */
+export function alternativeStartPlayers(matches) {
+  const counts=new Map();
+  for(const m of matches||[]) for(const name of [m.white,m.black])
+    if(name) counts.set(name,(counts.get(name)||0)+1);
+  return new Set([...counts].filter(([,count])=>count>1).map(([name])=>name));
+}
 export function playerMatches(t,name){
   if(!name)return [];
   return t.matches.filter(m=>m.derivedStatus!=='bye' && (m.white===name || m.black===name));

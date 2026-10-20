@@ -141,3 +141,39 @@ export function gloryAwards(t) {
   }
   return out;
 }
+
+
+/** #10 — Até cinco honrarias em destaque na página inicial.
+ * Preferência por 2 tradicionais e 3 tronos regionais conquistados.
+ * Dentro de cada grupo, a data da partida premiada mais recente prevalece.
+ * Sem datas, a ordem original das honrarias resolve o empate sem fingir cronologia.
+ * Na ausência de vencedores suficientes, o painel exibe tronos por conquistar.
+ */
+export function featuredGloryAwards(awards, limit=5) {
+  if(!Array.isArray(awards) || !Number.isInteger(limit) || limit<=0)return [];
+  const lastDate=a=>{
+    const dates=(a?.games||[]).map(m=>parseDate(m?.end)?.getTime()).filter(Number.isFinite);
+    return dates.length?Math.max(...dates):-Infinity;
+  };
+  const earned=a=>a?.score!=null && Array.isArray(a.holders) && a.holders.length>0;
+  const indexed=awards.map((a,i)=>({a,i,date:lastDate(a)}));
+  const compare=(x,y)=>y.date-x.date || x.i-y.i;
+  const ordered=items=>items.sort(compare);
+  const classic=ordered(indexed.filter(x=>!x.a?.mapId && earned(x.a)));
+  const regional=ordered(indexed.filter(x=>!!x.a?.mapId && earned(x.a)));
+  const selected=[...classic.slice(0,Math.min(2,limit)),...regional.slice(0,Math.min(3,Math.max(0,limit-2)))];
+  const used=new Set(selected.map(x=>x.i));
+  const remaining=ordered(indexed.filter(x=>earned(x.a) && !used.has(x.i)));
+  for(const x of remaining) {
+    if(selected.length>=limit)break;
+    selected.push(x);used.add(x.i);
+  }
+  // Os mapas regionais continuam presentes mesmo antes das primeiras vitórias.
+  const unclaimed=ordered(indexed.filter(x=>!earned(x.a)&&x.a?.mapId&&!used.has(x.i)))
+    .concat(ordered(indexed.filter(x=>!earned(x.a)&&!x.a?.mapId&&!used.has(x.i))));
+  for(const x of unclaimed){
+    if(selected.length>=limit)break;
+    selected.push(x);used.add(x.i);
+  }
+  return ordered(selected).slice(0,limit).map(x=>x.a);
+}

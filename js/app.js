@@ -1,7 +1,7 @@
 import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches} from './model.js';
 import {activeBoardInfo} from './live.js';
 import {gameStats} from './game-stats.js';
-import {gloryAwards} from './glory.js';
+import {gloryAwards,featuredGloryAwards} from './glory.js';
 import {REGION_MAPS} from './regions.js';
 import {editionChampion,editionRivalries,interEditionRivalries} from './history.js';
 const dataUrl='./data/campeonatos.json';
@@ -157,16 +157,17 @@ function drawOngoing(){
 }
 function drawGlory(){
   const awards=gloryAwards(current);
-  const summarize=a=>a.score
-    ? a.holders.join(', ')+' · '+a.score
-    : 'Aguardando dados suficientes';
-  const preview=['conqueror','siege'].map(key=>awards.find(a=>a.key===key));
-  byId('glory-preview').innerHTML=preview.map(a=>
-    '<div class="glory-preview-card"><span class="medal" aria-hidden="true">'+s(a.icon)+'</span><div><h3>'+s(a.name)+'</h3><p>'+s(summarize(a))+'</p></div></div>'
-  ).join('');
   const medalArt=a=>a.mapId&&REGION_MAPS[a.mapId]
     ? '<span class="medal medal-map" role="img" aria-label="Mapa estilizado de '+s(a.mapLabel)+'"><svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="'+REGION_MAPS[a.mapId]+'"/></svg></span>'
     : '<span class="medal" aria-hidden="true">'+s(a.icon)+'</span>';
+  const preview=featuredGloryAwards(awards);
+  byId('glory-preview').innerHTML=preview.map(a=>{
+    const holders=a.holders.length?a.holders.join(' · '):(a.mapId?'Trono sem conquistador':'Aguardando resultados');
+    const subtitle=a.score?holders+' · '+a.score:holders;
+    return '<button type="button" class="glory-preview-card glory-preview-link" data-view="gloria" aria-label="Ver a honraria '+s(a.name)+' no Salão da Glória">'+
+      medalArt(a)+'<span class="glory-preview-copy"><span class="glory-preview-type">'+(a.mapId?'Trono regional':'Honraria do campeonato')+'</span>'+
+      '<strong>'+s(a.name)+'</strong><span class="glory-preview-subtitle">'+s(subtitle)+'</span></span><span class="glory-preview-chevron" aria-hidden="true">›</span></button>';
+  }).join('');
   const matchRefs=games=>'<details class="honor-games"><summary>Partidas relacionadas ('+games.length+')</summary><ul>'+
     games.map(m=>{
       const label='Rodada '+m.round+' · '+m.white+' × '+m.black+(m.result?' · '+m.result:'');

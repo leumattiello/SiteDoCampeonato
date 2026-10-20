@@ -105,3 +105,27 @@
 .medal-map svg{width:53px;height:53px;fill:#654821;stroke:#f6d895;stroke-width:.55;stroke-linejoin:round}
 .honor-regional .holder{font-size:16px}
 @media(max-width:600px){.glory-section-title{font-size:18px}}
+
+/* #10 — retrospectos de campeonatos e rivalidades com links auditáveis. */
+.history-section{margin:22px 0}.history-section h2,.history-section h3{font-size:19px;margin-bottom:8px;color:#695030}.history-helper{font-size:12px;color:#756e62;line-height:1.6;margin:9px 0 16px}
+.history-rivalries{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.history-rivalry{padding:16px;border:1px solid #dfd3bc;background:#f7f0e1;min-width:0}
+.history-rivalry strong{color:#4d442e}.history-rivalry p{font-size:12px;color:#776d5b;margin:9px 0}
+.history-rivalry summary,.history-matches summary{cursor:pointer;color:#85632d;font-weight:700;font-size:12px}
+.history-game-list{padding-left:20px;margin:10px 0;font-size:12px;line-height:1.8}
+.history-game-list a{color:#795626}.history-matches{margin-top:19px}.history-matches>div{margin-top:15px}
+@media(max-width:720px){.history-rivalries{grid-template-columns:1fr}.history-card{padding:16px}}
+
+
+/* #10 — vitrine dinâmica de 5 honrarias na página inicial (mapas regionais). */
+.glory-preview-link{width:100%;min-height:66px;cursor:pointer;text-align:left;color:inherit;font-family:inherit;transition:background .18s ease,border-color .18s ease}
+.glory-preview-link:hover{background:#ede1c9;border-color:#c6a974}
+.glory-preview-link:focus-visible{outline:3px solid #956e3d;outline-offset:2px}
+.glory-preview-link .medal{width:41px;height:41px;flex:0 0 41px;font-size:23px}
+.glory-preview-link .medal-map svg{width:33px;height:33px}
+.glory-preview-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.glory-preview-type{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#89714b}
+.glory-preview-copy strong{font-size:12px;line-height:1.35;color:#363a2f}
+.glory-preview-subtitle{font-size:11px;line-height:1.35;color:#776e5d;overflow-wrap:anywhere}
+.glory-preview-chevron{font-size:22px;align-self:center;color:#9b8259}
+@media(max-width:600px){.glory-preview-link{min-height:62px}}

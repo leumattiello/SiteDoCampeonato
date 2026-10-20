@@ -127,3 +127,9 @@ Confrontos exibem abertura pública identificada pelo Lichess, número de lances
 ### Melhoria #9 — Salão da Glória
 
 Seis honrarias calculadas a partir das partidas oficiais: **Grande Cerco** (dias entre datas), **Batalha Épica** (mais meio-lances), **Ataque Relâmpago** (vitória em menos meio-lances), **Conquistador** (mais vitórias), **Escudo Invicto** (sequência por data de encerramento) e **Mestre das Aberturas** (variedade de códigos ECO, mínimo dois). Critérios, participantes, empates e partidas relacionadas aparecem no site; premiações sujeitas a alterações são sinalizadas como provisórias. A implementação não altera pontos ou a planilha. Consulte `docs/melhoria-09-salao-da-gloria.md`.
+
+### Melhoria #10 — Rivalidades e campeões anteriores
+O arquivo histórico apresenta campeões confirmados, empates sem desempate oficial e retrospecto dos duelos em cada edição. Rivalidades entre campeonatos só são agrupadas quando ambos os nicks antigos correspondem a jogadores atuais validados na aba `Jogadores`; nomes parecidos nunca são associados automaticamente. O campeonato atual continua como foco das páginas Início e Tabela. Veja `docs/melhoria-10-rivalidades-historicas.md`.
+
+
+**Página inicial — Salão da Glória:** a vitrine mostra até cinco honrarias dinâmicas, priorizando duas tradicionais e três regionais com vencedores; escolhe partidas mais recentes por data de término verificada, sem presumir data de concessão. As medalhas regionais mantêm seus mapas e levam à página Glória com todas as 17 honrarias.

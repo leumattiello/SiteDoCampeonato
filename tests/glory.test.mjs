@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildTournament} from '../js/model.js';
-import {gloryAwards} from '../js/glory.js';
+import {gloryAwards,featuredGloryAwards} from '../js/glory.js';
 
 const game=(id,white,black,result,props={})=>({
   id,round:1,white,black,result,status:'Finalizado',
@@ -135,4 +135,30 @@ test('Todos os jogos de honrarias são da edição atual, não do histórico',()
  const t=tour([game('Ab12Cd34','Ana','Bia','1-0')]);
  const all=gloryAwards(t);
  assert.ok(all.every(a=>a.games.every(m=>m.id==='Ab12Cd34')));
+});
+
+
+test('vitrine mantém cinco honrarias com preferência para 2 tradicionais e 3 regionais',()=>{
+ const classic=Array.from({length:6},(_,i)=>({key:'c'+i,holders:['Ana'],score:'1 vitória',games:[{end:'2026-10-'+String(i+10).padStart(2,'0')}]}));
+ const regional=Array.from({length:11},(_,i)=>({key:'r'+i,mapId:'region'+i,holders:['Bia'],score:'1 vitória',games:[{end:'2026-10-'+String(i+10).padStart(2,'0')}]}));
+ const picked=featuredGloryAwards([...classic,...regional]);
+ assert.equal(picked.length,5);
+ assert.equal(picked.filter(a=>!!a.mapId).length,3);
+ assert.equal(picked.filter(a=>!a.mapId).length,2);
+ assert.deepEqual(picked.map(a=>a.key),['r10','r9','r8','c5','c4']);
+});
+
+test('vitrine preenche primeiro com outras honrarias conquistadas e depois não conquistadas',()=>{
+ const earned=[{key:'c1',holders:['Ana'],score:'1',games:[]},{key:'r1',mapId:'sicily',holders:['Bia'],score:'1',games:[]}];
+ const missing=Array.from({length:7},(_,i)=>({key:'missing'+i,mapId:'r'+i,holders:[],score:null,games:[]}));
+ const x=featuredGloryAwards([...earned,...missing]);
+ assert.equal(x.length,5);
+ assert.equal(x.filter(a=>a.score!==null).length,2);
+ assert.deepEqual(x.slice(0,2).map(a=>a.key),['c1','r1']);
+});
+test('vitrine ignora entradas inválidas e limita o retorno',()=>{
+ assert.deepEqual(featuredGloryAwards(null),[]);
+ assert.deepEqual(featuredGloryAwards([],5),[]);
+ assert.deepEqual(featuredGloryAwards([{key:'a',holders:['X'],score:'1',games:[]}],0),[]);
+ assert.equal(featuredGloryAwards([{key:'a',holders:['X'],score:'1',games:[]}],1).length,1);
 });

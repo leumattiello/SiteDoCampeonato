@@ -133,3 +133,7 @@ O arquivo histórico apresenta campeões confirmados, empates sem desempate ofic
 
 
 **Página inicial — Salão da Glória:** a vitrine mostra até cinco honrarias dinâmicas, priorizando duas tradicionais e três regionais com vencedores; escolhe partidas mais recentes por data de término verificada, sem presumir data de concessão. As medalhas regionais mantêm seus mapas e levam à página Glória com todas as 17 honrarias.
+
+### Melhoria #11 — Sugestões de partidas sem vínculo
+
+A seção **Sugestões** identifica possíveis jogos públicos de correspondência para confrontos sem URL na coluna F, verificando nicks, cores, modalidade e datas. O organizador abre e confere o jogo, depois copia a URL para preencher manualmente a coluna F. Nenhum link ou resultado é registrado automaticamente na planilha. A ausência de candidatos pode decorrer de acesso restrito ou da consulta pública limitada do Lichess.

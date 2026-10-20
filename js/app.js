@@ -109,7 +109,7 @@ function openWatch(id) {
 }
 function showToast(text){const toast=byId('toast');toast.textContent=text;toast.classList.add('visible');clearTimeout(showToast.handle);showToast.handle=setTimeout(()=>toast.classList.remove('visible'),3500);}
 function showPage(name){
-  if(!['inicio','classificacao','rodadas','gloria','academia','historico'].includes(name))name='inicio';
+  if(!['inicio','classificacao','rodadas','gloria','academia','historico','sugestoes'].includes(name))name='inicio';
   activePage=name;
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.dataset.page!==name));
   document.querySelectorAll('.nav-link').forEach(btn=>{const active=btn.dataset.view===name;btn.classList.toggle('active',active);if(active)btn.setAttribute('aria-current','page');else btn.removeAttribute('aria-current');});
@@ -257,11 +257,31 @@ function drawHistory(){
   root.innerHTML='<p class="history-helper">O campeonato atual continua em destaque nas páginas Início e Tabela. Aqui estão as edições já encerradas.</p>'+
     crossMarkup+previous;
 }
-function renderAll(){drawStats();drawMyBattle();drawLeaders();drawRecent();drawOngoing();drawGlory();drawStandings();drawRounds();drawTutorials();drawHistory();}
+function drawSuggestions(){
+  const info=store?.unlinkedSuggestions||{};
+  const rows=Array.isArray(info.candidates)?info.candidates:[];
+  const root=byId('suggestions-content');
+  const timestamp=info.checkedAt?new Date(info.checkedAt).toLocaleString('pt-BR'):'Não informada';
+  const notes=Array.isArray(info.warnings)?info.warnings.filter(x=>typeof x==='string'):[];
+  root.innerHTML='<p class="suggestion-note"><strong>Apenas sugestões.</strong> Confirme jogadores, cores e partida no Lichess antes de preencher manualmente a coluna F da planilha. Partidas privadas podem não aparecer. Última consulta: '+s(timestamp)+'.</p>'+
+    (info.status&&info.status!=='ok'?'<p class="suggestion-alert">Busca '+s(info.status)+'. Os resultados podem estar incompletos.</p>':'')+
+    notes.map(x=>'<p class="suggestion-alert">'+s(x)+'</p>').join('')+
+    (rows.length?'<div class="suggestion-list">'+rows.map(x=>{
+      const match=current.matches.find(m=>m.id===x.matchId);
+      const url=typeof x.url==='string'&&/^https:\/\/lichess\.org\/[A-Za-z0-9]{8}$/.test(x.url)?x.url:null;
+      if(!match||match.url||!url||match.white!==x.white||match.black!==x.black)return '';
+      return '<article class="suggestion-card"><h3>Rodada '+s(match.round)+': '+s(match.white)+' × '+s(match.black)+'</h3>'+
+        '<p>Criação: '+s(x.createdAt||'Não informada')+' · '+(x.daysPerTurnVerified?'Correspondência: 1 dia por lance confirmado':'Conferir o tempo por lance no Lichess')+'</p>'+
+        '<div class="suggestion-actions"><a class="button button-light" href="'+s(url)+'" target="_blank" rel="noopener noreferrer">Verificar no Lichess ↗</a>'+
+        '<button type="button" class="button button-light" data-copy-candidate="'+s(url)+'">Copiar URL para coluna F</button></div></article>';
+    }).join('')+'</div>':'<div class="empty-message">Nenhuma sugestão disponível nesta consulta. A ausência de sugestões não significa que não existam jogos.</div>');
+}
+function renderAll(){drawStats();drawMyBattle();drawLeaders();drawRecent();drawOngoing();drawGlory();drawStandings();drawRounds();drawTutorials();drawHistory();drawSuggestions();}
 async function init(){
   document.addEventListener('click',e=>{
     const replay=e.target.closest('[data-replay-id]');if(replay){e.preventDefault();openReplay(replay.dataset.replayId);return;}
     const watching=e.target.closest('[data-watch-id]');if(watching){e.preventDefault();openWatch(watching.dataset.watchId);return;}
+    const suggestion=e.target.closest('[data-copy-candidate]');if(suggestion){e.preventDefault();const url=suggestion.dataset.copyCandidate;if(/^https:\/\/lichess\.org\/[A-Za-z0-9]{8}$/.test(url)){navigator.clipboard?.writeText(url).then(()=>showToast('URL copiada. Cole na coluna F após conferir no Lichess.')).catch(()=>showToast('Não foi possível copiar; abra o link no Lichess.'));}return;}
     const nav=e.target.closest('[data-view]');if(nav){e.preventDefault();showPage(nav.dataset.view);return;}
     const round=e.target.closest('[data-round]');if(round){roundSelected=Number(round.dataset.round);drawRounds();}
     const dev=e.target.closest('[data-device]');if(dev){device=dev.dataset.device;document.querySelectorAll('[data-device]').forEach(b=>{b.classList.toggle('selected',b===dev);b.setAttribute('aria-pressed',String(b===dev));});drawTutorials();}

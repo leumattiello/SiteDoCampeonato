@@ -45,6 +45,8 @@ jobs:
           fi
       - name: Conciliar resultados e status Lichess (melhoria #3)
         run: python3 scripts/resolve_lichess_results.py
+      - name: Sugerir partidas sem vínculo (somente leitura)
+        run: python3 scripts/suggest_unlinked_games.py
       - name: Preparar arquivos públicos
         run: |
           mkdir -p _site/css _site/js _site/data

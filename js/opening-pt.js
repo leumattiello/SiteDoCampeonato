@@ -47,7 +47,17 @@ export function openingNamePt(name){
  // Nomes próprios de variantes são preservados para não inventar traduções.
  const segments=out.split(/(:\s*)/);
  for(let i=2;i<segments.length;i+=2){
-  for(const [pattern,translation] of terms)segments[i]=segments[i].replace(pattern,translation);
+  const part=segments[i].trim();
+  // Em português, o tipo precede o nome: "Variante Najdorf".
+  const named=/^(.+?) (Variation|Attack|Defense|Gambit)$/i.exec(part);
+  if(named){
+    const kind={variation:'Variante',attack:'Ataque',defense:'Defesa',gambit:'Gambito'}[named[2].toLowerCase()];
+    if(/^Two Knights$/i.test(named[1]))segments[i]='Defesa dos Dois Cavalos';
+    else if(/^Fried Liver$/i.test(named[1]))segments[i]='Ataque Fegatello';
+    else segments[i]=kind+' '+named[1];
+  } else {
+    for(const [pattern,translation] of terms)segments[i]=segments[i].replace(pattern,translation);
+  }
  }
  return segments.join('');
 }

@@ -137,3 +137,7 @@ O arquivo histórico apresenta campeões confirmados, empates sem desempate ofic
 ### Melhoria #11 — Sugestões de partidas sem vínculo
 
 A seção **Sugestões** identifica possíveis jogos públicos de correspondência para confrontos sem URL na coluna F, verificando nicks, cores, modalidade e datas. O organizador abre e confere o jogo, depois copia a URL para preencher manualmente a coluna F. Nenhum link ou resultado é registrado automaticamente na planilha. A ausência de candidatos pode decorrer de acesso restrito ou da consulta pública limitada do Lichess.
+
+### Melhoria #12 — Ajuda contextual a iniciantes
+
+Na seção **Minha batalha**, um guia explica a cor, o adversário e a situação do confronto. Exibe link para o perfil Lichess **somente quando o nick é validado** e oferece atalhos diretos aos tutoriais **Criar uma partida** e **Aceitar um desafio** em celular ou computador. Não cria partidas, não grava na planilha e não reintroduz os comandos antigos de copiar link ou fazer lance.

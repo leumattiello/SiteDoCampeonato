@@ -1,6 +1,8 @@
 import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches,eligibleToStart,alternativeStartPlayers} from './model.js';
 import {activeBoardInfo} from './live.js';
+import {contextualHelp} from './contextual-help.js';
 import {gameStats} from './game-stats.js';
+import {openingNamePt} from './opening-pt.js';
 import {gloryAwards,featuredGloryAwards} from './glory.js';
 import {REGION_MAPS} from './regions.js';
 import {editionChampion,editionRivalries,interEditionRivalries} from './history.js';
@@ -36,7 +38,7 @@ const gameStatsMarkup=(m)=>{
   const info=gameStats(m);
   if(!info) return m.url && ['finished','playing'].includes(m.derivedStatus)
     ? '<div class="game-stats muted">Abertura e lances: dados não verificados ou indisponíveis.</div>' : '';
-  const opening=info.openingName?info.openingName:'não identificada';
+  const opening=openingNamePt(info.openingName)||'não identificada';
   const eco=info.eco?` (ECO ${info.eco})`:'';
   const moves=info.moves?
     `${info.moves.plies} individuais · ${info.moves.completePairs} pares completos${info.moves.unpaired?' + 1 sem resposta':''}`:'não informados';
@@ -135,7 +137,18 @@ function drawMyBattle(){
   else advise='Aguarde a atualização do resultado pelo organizador.';
   root.innerHTML=`<div class="battle-state"><span class="signal"></span>${chip(match.derivedStatus)} <span>· RODADA ${match.round}</span></div>
   <div class="battle-stage"><div class="battle-player">${flag(match.white,whiteWinner)}<strong>${s(match.white)}</strong><small>${s(nickFor(match.white)||'Peças brancas')}</small>${ratingBadge(match.white)}</div><div class="versus">VS</div><div class="battle-player">${flag(match.black,blackWinner)}<strong>${s(match.black)}</strong><small>${s(nickFor(match.black)||'Peças pretas')}</small>${ratingBadge(match.black)}</div></div>
-  <div class="battle-caption">${s(advise)}</div>${gameStatsMarkup(match)}<div class="battle-bottom">${watchButton(match,'button button-light')}${validLichessUrl(match.url)?`<a class="button button-gold" href="${s(validLichessUrl(match.url))}" target="_blank" rel="noopener noreferrer">Abrir partida ↗</a>`:`<button type="button" class="button button-gold" data-view="rodadas">Ver confronto ↗</button>`}<button type="button" class="button button-light" data-view="academia">Como jogar? ♜</button></div>`;
+  <div class="battle-caption">${s(advise)}</div>${(function(){
+    const help=contextualHelp(match,selected,store?.players);
+    if(!help)return '';
+    const profile=help.profile?'<a class="button button-light" href="'+s(help.profile)+'" target="_blank" rel="noopener noreferrer">Perfil de '+s(help.opponent)+' ↗</a>':
+      '<span class="context-muted">Perfil do adversário ainda não validado.</span>';
+    return '<section class="context-help" aria-label="Ajuda para esta partida"><strong>Guia para sua próxima batalha</strong>'+
+      '<p>Você joga de <strong>'+s(help.color)+'</strong> contra <strong>'+s(help.opponent)+'</strong>. '+s(help.message)+'</p>'+
+      '<div class="context-help-actions">'+profile+
+      '<button type="button" class="button button-light" data-view="academia" data-tutorial="create">Como criar uma partida</button>'+
+      '<button type="button" class="button button-light" data-view="academia" data-tutorial="accept">Como aceitar o desafio</button></div>'+
+      '<small>Confira sempre o controle de 1 dia por lance e as cores estabelecidas para este confronto.</small></section>';
+   })()}${gameStatsMarkup(match)}<div class="battle-bottom">${watchButton(match,'button button-light')}${validLichessUrl(match.url)?`<a class="button button-gold" href="${s(validLichessUrl(match.url))}" target="_blank" rel="noopener noreferrer">Abrir partida ↗</a>`:`<button type="button" class="button button-gold" data-view="rodadas">Ver confronto ↗</button>`}<button type="button" class="button button-light" data-view="academia">Como jogar? ♜</button></div>`;
 }
 function drawLeaders(){byId('leaderboard-preview').innerHTML=current.standings.slice(0,5).map((p,i)=>`<div class="leader-row"><span class="rank ${['first','second','third'][i]||''}">${i+1}º</span>${flagSmall(p.name,i===0)}<div class="leader-name">${s(p.name)}<small>${nickFor(p.name)?s(nickFor(p.name)):`${p.wins} vitória${p.wins===1?'':'s'}`}</small>${ratingBadge(p.name)}</div><span class="leader-points">${number(p.points)} <small>pts</small></span></div>`).join('');}
 function drawRecent(){
@@ -295,6 +308,8 @@ async function init(){
     const replay=e.target.closest('[data-replay-id]');if(replay){e.preventDefault();openReplay(replay.dataset.replayId);return;}
     const watching=e.target.closest('[data-watch-id]');if(watching){e.preventDefault();openWatch(watching.dataset.watchId);return;}
     const suggestion=e.target.closest('[data-copy-candidate]');if(suggestion){e.preventDefault();const url=suggestion.dataset.copyCandidate;if(/^https:\/\/lichess\.org\/[A-Za-z0-9]{8}$/.test(url)){navigator.clipboard?.writeText(url).then(()=>showToast('URL copiada. Cole na coluna F após conferir no Lichess.')).catch(()=>showToast('Não foi possível copiar; abra o link no Lichess.'));}return;}
+    const jump=e.target.closest('[data-tutorial]');
+    if(jump){const section=jump.dataset.tutorial==='accept'?1:0;showPage('academia');document.querySelectorAll('#tutorial-content details').forEach((d,i)=>{d.open=i===section;});byId('academy-tutorial-anchor')?.scrollIntoView({block:'start',behavior:'auto'});return;}
     const nav=e.target.closest('[data-view]');if(nav){e.preventDefault();showPage(nav.dataset.view);return;}
     const round=e.target.closest('[data-round]');if(round){roundSelected=Number(round.dataset.round);drawRounds();}
     const dev=e.target.closest('[data-device]');if(dev){device=dev.dataset.device;document.querySelectorAll('[data-device]').forEach(b=>{b.classList.toggle('selected',b===dev);b.setAttribute('aria-pressed',String(b===dev));});drawTutorials();}

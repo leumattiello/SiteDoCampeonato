@@ -1,3 +1,4 @@
+import {applyTiebreakers} from './tiebreak.js';
 /** Pure tournament rules. No browser dependencies; covered by node:test. */
 export const norm = text => String(text ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 export function parseDate(input) {
@@ -112,7 +113,7 @@ export function buildTournament(tournament){
     else if(m.result==='0-1'){b.points++;b.wins++;a.losses++;}
     else if(m.result==='½-½'){a.points+=.5;b.points+=.5;a.draws++;b.draws++;}
   }
-  const standings=[...people.values()].sort((a,b)=>b.points-a.points || b.wins-a.wins || a.name.localeCompare(b.name,'pt-BR'));
+  const standings=applyTiebreakers([...people.values()],decorated);
   const withDates=finished.filter(m=>parseDate(m.end));
   const recent=withDates.length?withDates.slice().sort((a,b)=>parseDate(b.end)-parseDate(a.end) || b.round-a.round).slice(0,5):finished.slice(-5).reverse();
   const alerts=[];

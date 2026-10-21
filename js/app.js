@@ -2,6 +2,7 @@ import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeSc
 import {activeBoardInfo} from './live.js';
 import {contextualHelp} from './contextual-help.js';
 import {gameStats} from './game-stats.js';
+import {openingNamePt} from './opening-pt.js';
 import {gloryAwards,featuredGloryAwards} from './glory.js';
 import {REGION_MAPS} from './regions.js';
 import {editionChampion,editionRivalries,interEditionRivalries} from './history.js';
@@ -37,7 +38,7 @@ const gameStatsMarkup=(m)=>{
   const info=gameStats(m);
   if(!info) return m.url && ['finished','playing'].includes(m.derivedStatus)
     ? '<div class="game-stats muted">Abertura e lances: dados não verificados ou indisponíveis.</div>' : '';
-  const opening=info.openingName?info.openingName:'não identificada';
+  const opening=openingNamePt(info.openingName)||'não identificada';
   const eco=info.eco?` (ECO ${info.eco})`:'';
   const moves=info.moves?
     `${info.moves.plies} individuais · ${info.moves.completePairs} pares completos${info.moves.unpaired?' + 1 sem resposta':''}`:'não informados';

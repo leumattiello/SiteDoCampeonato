@@ -138,3 +138,28 @@
 
 /* #12 — ajuda contextual acessível no próximo confronto */
 .context-help{margin:13px 0;padding:14px 16px;background:#f2e8d5;border:1px solid #dfcdab;border-left:4px solid #a9874b}.context-help>strong{font-size:13px;color:#544629}.context-help p{font-size:12px;line-height:1.7;margin:8px 0}.context-help-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.context-help-actions .button{padding:9px 12px;font-size:11px}.context-help small,.context-muted{font-size:11px;color:#766e61}
+
+/* #17 — pergaminho de regras: legibilidade, contraste e hierarquia medieval */
+.rules-intro{max-width:950px;margin:4px 0 18px;padding:16px 20px;background:#eee0c5;border:1px solid #cdb789;border-left:5px solid #9b7238;color:#473d2e;line-height:1.7;font-size:14px}
+.rules-index{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.rules-index a{padding:9px 12px;background:#f8f1e4;border:1px solid var(--line);border-radius:4px;font-size:12px;font-weight:700;color:#72542c;text-decoration:none}
+.rules-index a:hover,.rules-index a:focus-visible{background:#eddfc5}
+.rules-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.rules-card{min-width:0;background:var(--paper);border:1px solid #d2c2a5;border-top:4px solid #a78248;box-shadow:var(--shadow);padding:24px;border-radius:4px;scroll-margin-top:120px}
+.rules-card-wide{grid-column:1/-1}
+.rules-chapter{display:block;margin-bottom:10px;font-size:10px;font-weight:800;letter-spacing:1.4px;color:#8a693c}
+.rules-card h2{font-size:20px;color:#463c2d;margin:0 0 14px}
+.rules-card h3{font-size:14px;color:#57472f;margin:0 0 8px}
+.rules-card p,.rules-card li{font-size:13px;line-height:1.75;color:#514b40;overflow-wrap:anywhere}
+.rules-card p+p{margin-top:12px}
+.rules-card a:not(.button){color:#725026;text-decoration:underline;text-underline-offset:3px}
+.rules-card .button{display:inline-flex;margin-top:16px;text-align:left;white-space:normal}
+.rules-score{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0}
+.rules-score div{display:flex;flex-direction:column;align-items:center;padding:11px 5px;background:#e8dcc3;border:1px solid #d4c39e}
+.rules-score strong{font:700 24px 'Cinzel',Georgia,serif;color:#694e28}.rules-score span{font-size:12px;color:#514b40}
+.rules-tiebreak{margin:8px 0 0;padding-left:23px}.rules-tiebreak li{margin-bottom:9px;padding-left:4px}
+.rules-conduct{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0}
+.rules-conduct>div{padding:16px;background:#f7f0e3;border:1px solid #dfcfb1}
+.rules-footnote{border-top:1px solid #d9c9ad;padding-top:14px;margin-top:16px!important}
+@media(max-width:880px){.rules-conduct{grid-template-columns:1fr}.rules-grid{gap:12px}}
+@media(max-width:740px){.primary-nav{grid-template-columns:repeat(4,minmax(0,1fr))}.nav-link{min-height:48px;font-size:10px;white-space:normal}.rules-grid{grid-template-columns:1fr}.rules-card{padding:17px;scroll-margin-top:155px}.rules-card-wide{grid-column:auto}.rules-index a{flex:1 1 100px;text-align:center}.rules-intro{font-size:13px;padding:13px}.rules-score strong{font-size:21px}}

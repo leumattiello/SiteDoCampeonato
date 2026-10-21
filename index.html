@@ -29,12 +29,13 @@
         <button type="button" class="nav-link" data-view="academia"><span class="nav-icon" aria-hidden="true">♜</span> Ajuda</button>
         <button type="button" class="nav-link" data-view="sugestoes"><span class="nav-icon" aria-hidden="true">⌕</span> Sugestões</button>
         <button type="button" class="nav-link" data-view="historico"><span class="nav-icon" aria-hidden="true">▣</span> Histórico</button>
+        <button type="button" class="nav-link" data-view="regras"><span class="nav-icon" aria-hidden="true">📜</span> Regras</button>
       </nav>
       <div class="sidebar-end">
         <div class="codex-card">
           <div class="codex-star" aria-hidden="true">✦</div>
           <p class="eyebrow">LEIS DO REINO</p>
-          <h3>Uma jogada<br>por dia.</h3>
+          <h3>Um dia<br>por lance.</h3>
           <p>Tempo para pensar. Glória para conquistar.</p>
           <span>♟ CORRESPONDÊNCIA</span>
         </div>
@@ -113,6 +114,92 @@
         <section class="view hidden" id="view-academia" data-page="academia" aria-labelledby="academia-title"><div class="page-heading"><span class="overline">A ESCOLA DOS CAVALEIROS</span><h1 id="academia-title">Academia do Lichess</h1><p>Não precisa entender de computador para jogar. Escolha o que deseja fazer e siga as instruções.</p></div><div class="tutorial-intro"><div class="tutorial-emblem">♞</div><div><strong>Aprender também faz parte da aventura.</strong><p>Vamos mostrar uma etapa de cada vez. Você não precisa memorizar nada.</p></div></div><div class="device-toggle" aria-label="Tipo de dispositivo"><button type="button" data-device="celular" class="selected" aria-pressed="true">▣ &nbsp; Estou no celular</button><button type="button" data-device="computador" aria-pressed="false">▤ &nbsp; Estou no computador</button></div><p class="device-help"><strong>Também funciona no celular:</strong> para seguir as instruções de <strong>“Estou no computador”</strong>, abra <strong>lichess.org</strong> no <strong>Chrome, Firefox ou outro navegador</strong> do celular, sem usar o aplicativo. A posição dos botões pode variar conforme a tela.</p><div id="tutorial-content" class="tutorial-grid"></div><div class="tutorial-foot"><strong>Não encontrou um botão com o mesmo nome?</strong> O Lichess pode alterar sua interface com o tempo. Peça ajuda ao organizador e informe em qual etapa encontrou dificuldade.</div></section>
         <section class="view hidden" id="view-sugestoes" data-page="sugestoes" aria-labelledby="suggestions-title"><div class="page-heading"><span class="overline">EXPLORADORES DO REINO</span><h1 id="suggestions-title">Partidas sem vínculo</h1><p>Possíveis partidas encontradas no Lichess para confrontos sem link na planilha. Confira tudo antes de usar: nenhuma associação é automática.</p></div><div class="panel long-panel" id="suggestions-content"></div></section>
         <section class="view hidden" id="view-historico" data-page="historico" aria-labelledby="historico-title"><div class="page-heading"><span class="overline">NOS ANAIS DO REINO</span><h1 id="historico-title">Arquivo dos Reinos</h1><p>Os campeonatos que já terminaram também fazem parte da nossa história.</p></div><div id="history-content"></div></section>
+        <section class="view hidden" id="view-regras" data-page="regras" aria-labelledby="regras-title">
+          <div class="page-heading">
+            <span class="overline">O PERGAMINHO DO REINO</span>
+            <h1 id="regras-title">📜 Regras do Campeonato</h1>
+            <p>Um guia para todos jogarem, assistirem e acompanharem o torneio com tranquilidade e justiça.</p>
+          </div>
+          <div class="rules-intro" role="note">
+            <strong>O essencial:</strong> um dia <em>para cada lance</em>, uma partida ativa por jogador e nenhuma interferência em partidas alheias em andamento.
+          </div>
+          <nav class="rules-index" aria-label="Ir para uma regra">
+            <a href="#regra-partidas">Partidas</a>
+            <a href="#regra-rodadas">Rodadas</a>
+            <a href="#regra-pontos">Pontos e folgas</a>
+            <a href="#regra-desempates">Desempates</a>
+            <a href="#regra-conduta">Jogo limpo</a>
+            <a href="#regra-duvidas">Dúvidas</a>
+          </nav>
+          <div class="rules-grid">
+            <section class="rules-card" id="regra-partidas" aria-labelledby="regra-partidas-title">
+              <span class="rules-chapter">I · O RELÓGIO</span>
+              <h2 id="regra-partidas-title">Partidas por correspondência</h2>
+              <p>As partidas são disputadas no <a href="https://lichess.org/" target="_blank" rel="noopener noreferrer">Lichess</a>, com prazo de <strong>1 dia por lance</strong>. Isso quer dizer que cada jogador dispõe de até um dia para responder quando é sua vez. <strong>Não</strong> significa que seja permitido fazer apenas um lance por dia: se os dois estiverem disponíveis, a partida pode avançar rapidamente.</p>
+              <p>Ao combinar uma partida, confirme o modo <strong>Correspondência</strong>, o prazo de <strong>1 dia por lance</strong> e a <strong>cor das peças</strong> estabelecida no torneio. Informe o link do jogo ao organizador para registro no campeonato.</p>
+              <button type="button" class="button button-light" data-view="academia">Aprender a criar ou aceitar uma partida →</button>
+            </section>
+            <section class="rules-card" id="regra-rodadas" aria-labelledby="regra-rodadas-title">
+              <span class="rules-chapter">II · O CALENDÁRIO</span>
+              <h2 id="regra-rodadas-title">Schuring, rodadas e cores</h2>
+              <p>O campeonato segue o <strong>sistema Schuring</strong>: os participantes se enfrentam segundo uma tabela de confrontos e cores previamente definida, em rodadas.</p>
+              <p>Cada jogador só pode ter <strong>uma partida do campeonato em andamento</strong>. Se os dois adversários estiverem livres, é possível iniciar uma partida de uma rodada anterior ainda pendente, da rodada de referência ou de <strong>até uma rodada à frente</strong>. Rodadas mais adiantadas aguardam a liberação.</p>
+              <p>Na página <strong>Rodadas</strong>, a lista de partidas aptas é uma orientação baseada nos registros atualizados. Duas opções que compartilhem um jogador não podem começar ao mesmo tempo.</p>
+              <button type="button" class="button button-light" data-view="rodadas">Consultar os confrontos →</button>
+            </section>
+            <section class="rules-card" id="regra-pontos" aria-labelledby="regra-pontos-title">
+              <span class="rules-chapter">III · A PONTUAÇÃO</span>
+              <h2 id="regra-pontos-title">Vitórias, empates e folgas</h2>
+              <div class="rules-score" aria-label="Pontos por resultado">
+                <div><strong>1</strong><span>Vitória</span></div>
+                <div><strong>½</strong><span>Empate</span></div>
+                <div><strong>0</strong><span>Derrota</span></div>
+              </div>
+              <p><strong>Bye</strong> significa folga: o participante não joga naquela rodada. A pontuação da folga é exatamente o valor registrado na planilha oficial, que pode ser 1, 0,5 ou 0. Uma folga <strong>não</strong> é contada como vitória nem como partida efetivamente disputada.</p>
+              <p>Resultados e pontuações apresentados no site vêm dos registros oficiais do campeonato, complementados apenas por partidas devidamente validadas no Lichess.</p>
+            </section>
+            <section class="rules-card" id="regra-desempates" aria-labelledby="regra-desempates-title">
+              <span class="rules-chapter">IV · A CLASSIFICAÇÃO</span>
+              <h2 id="regra-desempates-title">Cinco critérios de desempate</h2>
+              <p>Se dois ou mais jogadores tiverem os mesmos pontos, os critérios são verificados <strong>na ordem abaixo</strong>, até haver uma diferença:</p>
+              <ol class="rules-tiebreak">
+                <li><strong>Confronto direto:</strong> pontos obtidos nos jogos entre os empatados. Com três ou mais jogadores, vale um pequeno torneio apenas entre eles.</li>
+                <li><strong>Vitórias efetivas:</strong> quem venceu mais partidas jogadas, sem contar folgas.</li>
+                <li><strong>Sonneborn–Berger:</strong> soma os pontos dos adversários vencidos e metade dos pontos daqueles com quem empatou.</li>
+                <li><strong>Koya:</strong> considera os pontos obtidos contra adversários que alcançaram ao menos 50% dos pontos possíveis na edição.</li>
+                <li><strong>Partidas com as pretas:</strong> quem efetivamente concluiu mais jogos conduzindo as peças pretas fica à frente. Esta é uma regra específica do nosso campeonato.</li>
+              </ol>
+              <p>Se os cinco critérios continuarem iguais, os jogadores <strong>compartilham a mesma posição</strong>. Durante o campeonato os desempates podem mudar: resultados incompletos são mostrados como <strong>provisórios</strong>. Folgas não contam como jogos para esses critérios.</p>
+              <button type="button" class="button button-light" data-view="classificacao">Ver a classificação →</button>
+            </section>
+            <section class="rules-card rules-card-wide" id="regra-conduta" aria-labelledby="regra-conduta-title">
+              <span class="rules-chapter">V · O JOGO LIMPO</span>
+              <h2 id="regra-conduta-title">Respeito dentro e fora do tabuleiro</h2>
+              <div class="rules-conduct">
+                <div>
+                  <h3>Durante a sua própria partida</h3>
+                  <p>Decida seus lances por conta própria. Não utilize <strong>engines, IA para recomendar jogadas, bases de finais ou conselhos de outras pessoas</strong> para obter vantagem enquanto a partida estiver ativa. Nas partidas por correspondência, o Lichess <strong>permite livros e exploradores de aberturas</strong>, desde que não sejam acompanhados de assistência proibida.</p>
+                </div>
+                <div>
+                  <h3>Enquanto assiste a outra partida em andamento</h3>
+                  <p><strong>Assistir é permitido e incentivado.</strong> Você pode acompanhar e refletir sobre a partida em particular, mas <strong>não comente, publique nem compartilhe análises, avaliações ou sugestões</strong> sobre o jogo em curso. Isso vale especialmente para mensagens aos participantes, para não interferir na disputa.</p>
+                </div>
+                <div>
+                  <h3>Depois que a partida termina</h3>
+                  <p>Está liberado — e é <strong>incentivado</strong> — comentar, analisar e debater as partidas encerradas, sejam suas ou de outros participantes. Aprender juntos faz parte da confraria.</p>
+                </div>
+              </div>
+              <p class="rules-footnote">As regras de fair play do Lichess também se aplicam. Consulte a <a href="https://lichess.org/page/fair-play" target="_blank" rel="noopener noreferrer">Política de Jogo Limpo ↗</a> e os <a href="https://lichess.org/terms-of-service" target="_blank" rel="noopener noreferrer">Termos de Uso ↗</a>.</p>
+            </section>
+            <section class="rules-card rules-card-wide" id="regra-duvidas" aria-labelledby="regra-duvidas-title">
+              <span class="rules-chapter">VI · A CONFRARIA</span>
+              <h2 id="regra-duvidas-title">Dúvidas e situações excepcionais</h2>
+              <p>Se perceber uma cor incorreta, um placar diferente do Lichess, um link ausente ou outro problema, informe o <strong>organizador em particular</strong> para que a situação seja conferida. Mantenha a cordialidade com os outros participantes.</p>
+              <p>Eventuais abandonos, problemas técnicos, divergências e possíveis medidas disciplinares serão tratados pelo organizador conforme o caso. <strong>Esta página não cria punições automáticas.</strong></p>
+              <button type="button" class="button button-light" data-view="academia">Consultar a Academia do Lichess →</button>
+            </section>
+          </div>
+        </section>
       </main>
       <footer><span>♞ REINOS DO XADREZ</span><p>Uma casa para nossas batalhas. As partidas são jogadas no <a href="https://lichess.org/" target="_blank" rel="noopener noreferrer">Lichess ↗</a>.</p><span id="footer-source">Dados da planilha do campeonato</span></footer>
     </div>

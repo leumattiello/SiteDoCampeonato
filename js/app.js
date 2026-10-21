@@ -111,7 +111,7 @@ function openWatch(id) {
 }
 function showToast(text){const toast=byId('toast');toast.textContent=text;toast.classList.add('visible');clearTimeout(showToast.handle);showToast.handle=setTimeout(()=>toast.classList.remove('visible'),3500);}
 function showPage(name){
-  if(!['inicio','classificacao','rodadas','gloria','academia','historico','sugestoes'].includes(name))name='inicio';
+  if(!['inicio','classificacao','rodadas','gloria','academia','historico','sugestoes','regras'].includes(name))name='inicio';
   activePage=name;
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.dataset.page!==name));
   document.querySelectorAll('.nav-link').forEach(btn=>{const active=btn.dataset.view===name;btn.classList.toggle('active',active);if(active)btn.setAttribute('aria-current','page');else btn.removeAttribute('aria-current');});

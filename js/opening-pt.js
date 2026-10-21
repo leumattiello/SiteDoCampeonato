@@ -54,8 +54,10 @@ export function openingNamePt(name){
     const kind={variation:'Variante',attack:'Ataque',defense:'Defesa',gambit:'Gambito'}[named[2].toLowerCase()];
     if(/^Two Knights$/i.test(named[1]))segments[i]='Defesa dos Dois Cavalos';
     else if(/^Fried Liver$/i.test(named[1]))segments[i]='Ataque Fegatello';
-    else segments[i]=kind+' '+named[1];
+    else {const label=({Exchange:'das Trocas',Advance:'do Avanço',Classical:'Clássica',Modern:'Moderna',Closed:'Fechada',Open:'Aberta'})[named[1]] || named[1];segments[i]=kind+' '+label;}
   } else {
+    // Variantes compostas: traduz as palavras funcionais, não sobrenomes.
+    segments[i]=segments[i].replace(/\b(Exchange|Advance|Classical|Modern) Variation\b/gi,(_,x)=>({Exchange:'Variante das Trocas',Advance:'Variante do Avanço',Classical:'Variante Clássica',Modern:'Variante Moderna'})[x[0].toUpperCase()+x.slice(1).toLowerCase()]||x+' Variation');
     for(const [pattern,translation] of terms)segments[i]=segments[i].replace(pattern,translation);
   }
  }

@@ -522,18 +522,22 @@ function descobrirPartidas_(escrever) {
       if(!white||!black||white===black||/^rodada\s+\d+$/.test(white)||white==='bye'||black==='bye')continue;
       const w=nicks[white],b=nicks[black];
       if(!w||!b||w===b||duplicates.has(w)||duplicates.has(b))continue;
-      const pair=w+'|'+b;
+      // Se a mesma dupla e cores aparecem duas vezes nesta edição, vínculo ambíguo.
+      const occurrences=grid.filter(row=>normalizarNome_(row[0])===white && normalizarNome_(row[3])===black).length;
+      if(occurrences!==1){resumo.ambiguos++;continue;}
       if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS)break;
       const games=[];
+      let complete=true;
       for(const [nick,opponent] of [[w,b],[b,w]]){
         if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS)break;
         const lookup=jogosPublicosPorDupla_(nick,opponent,desde);
         resumo.consultas++;
         if(lookup.status===429){resumo.erros++;console.log('Reinos: HTTP 429, busca interrompida.');return resumo;}
-        if(lookup.status!==200){resumo.erros++;continue;}
+        if(lookup.status!==200){resumo.erros++;complete=false;continue;}
         games.push(...lookup.jogos);
         Utilities.sleep(REINOS_CONFIG.PAUSA_MS);
       }
+      if(!complete){resumo.ignorados++;continue;}
       const validos={};
       for(const game of games){
         if(!partidaElegivelVinculo_(game,w,b,desde))continue;

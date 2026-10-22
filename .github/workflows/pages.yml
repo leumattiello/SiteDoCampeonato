@@ -25,6 +25,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Atualizar resultados a partir da planilha pública
         run: python3 scripts/sync_google_sheets.py
+      - name: Restaurar cache de perfis Lichess (24 horas)
+        uses: actions/cache@v4
+        with:
+          path: .cache/lichess-profiles.json
+          key: lichess-profile-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            lichess-profile-v1-${{ runner.os }}-
       - name: Validar jogadores no Lichess (melhoria #1)
         run: python3 scripts/validate_lichess_players.py
       - name: Recuperar cache das partidas Lichess (melhoria #2)

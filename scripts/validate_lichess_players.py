@@ -8,7 +8,7 @@ Falhas de rede geram estado 'indisponivel' sem interromper a publicação.
 
 import argparse
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from http.client import HTTPException
 from pathlib import Path
 import json
@@ -24,6 +24,9 @@ DEFAULT_JSON = ROOT / "data" / "campeonatos.json"
 API_ROOT = "https://lichess.org/api/user/"
 VALID_NICK = re.compile(r"^[A-Za-z0-9_-]{2,30}$")
 USER_AGENT = "ReinosDoXadrez/1.0 (GitHub Actions; public profile verifier)"
+CACHE_FILE = ROOT / ".cache" / "lichess-profiles.json"
+PROFILE_TTL = timedelta(hours=24)
+
 
 
 class NickNotFound(Exception):
@@ -88,9 +91,28 @@ def active_participant_names(data):
     return names
 
 
-def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=time.sleep):
+def cached_profile(cache, nick, stamp):
+    """Perfil público confirmado até 24h; não reutiliza nick diferente nem erros."""
+    entry = cache.get(nick.casefold())
+    if not isinstance(entry, dict) or not isinstance(entry.get("profile"), dict):
+        return None
+    try:
+        fetched = datetime.fromisoformat(entry["fetchedAt"].replace("Z", "+00:00"))
+        when = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        if fetched.tzinfo and when.tzinfo and timedelta(0) <= when-fetched < PROFILE_TTL:
+            profile = entry["profile"]
+            if str(profile.get("id") or "").casefold() == nick.casefold():
+                return profile
+    except (ValueError, TypeError, KeyError):
+        pass
+    return None
+
+
+def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=time.sleep, cache=None):
     """Altera apenas metadados Lichess nos jogadores, preservando nicks e jogos."""
     stamp = checked_at or datetime.now(timezone.utc).isoformat(timespec="seconds")
+    cache = cache if cache is not None else {}
+    blocked = False
     players = data.get("players", [])
     names = active_participant_names(data)
     if not names:
@@ -120,7 +142,12 @@ def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=ti
             status = {"status": "duplicado"}
         else:
             try:
-                profile = lookup(nick)
+                profile = cached_profile(cache, nick, stamp)
+                from_cache = profile is not None
+                if profile is None:
+                    if blocked:
+                        raise ProfileUnavailable("HTTP 429: novas consultas suspensas")
+                    profile = lookup(nick)
                 canonical = profile.get("username") or profile.get("id")
                 user_id = profile.get("id")
                 if (not isinstance(canonical, str) or not isinstance(user_id, str)
@@ -130,9 +157,15 @@ def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=ti
                     status = {"status": "valido", "username": canonical,
                               "id": user_id.casefold(), "url": f"https://lichess.org/@/{quote(canonical)}"}
                     player["lichessCorrespondence"] = correspondence_rating(profile, stamp)
+                    if not from_cache:
+                        corr = profile.get("perfs", {}).get("correspondence", {}) if isinstance(profile.get("perfs"),dict) else {}
+                        cache[nick.casefold()] = {"fetchedAt": stamp,
+                          "profile": {"id": user_id, "username": canonical,
+                            "perfs": {"correspondence": corr if isinstance(corr, dict) else {}}}}
             except NickNotFound:
                 status = {"status": "invalido", "motivo": "perfil_nao_encontrado"}
             except ProfileUnavailable as err:
+                if "429" in str(err): blocked = True
                 status = {"status": "indisponivel", "motivo": str(err)}
             except Exception as err:
                 # Erro transitório / inesperado: NÃO marcar o nick como inexistente.
@@ -152,10 +185,21 @@ def verify_players(data, *, lookup=get_public_profile, checked_at=None, pause=ti
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--file", type=Path, default=DEFAULT_JSON, help="JSON consolidado do campeonato")
+    parser.add_argument("--cache", type=Path, default=CACHE_FILE)
     args = parser.parse_args(argv)
     try:
         data = json.loads(args.file.read_text(encoding="utf-8"))
-        statuses = verify_players(data)
+        try:
+            loaded = json.loads(args.cache.read_text(encoding="utf-8"))
+            cache = loaded.get("profiles", {}) if isinstance(loaded, dict) and loaded.get("version") == 1 else {}
+            if not isinstance(cache, dict): cache = {}
+        except (ValueError, OSError, TypeError):
+            cache = {}
+        # Nenhuma repetição imediata após 429; consulta seguinte só em outra execução.
+        statuses = verify_players(data, cache=cache, lookup=lambda nick: get_public_profile(nick, attempts=1))
+        args.cache.parent.mkdir(parents=True, exist_ok=True)
+        safe_cache = {k:v for k,v in cache.items() if isinstance(k,str) and VALID_NICK.fullmatch(k) and isinstance(v,dict)}
+        args.cache.write_text(json.dumps({"version":1,"profiles":safe_cache}, ensure_ascii=False), encoding="utf-8")
         if statuses:
             args.file.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         totals = Counter(statuses.values())

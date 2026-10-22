@@ -23,6 +23,7 @@ const REINOS_CONFIG = Object.freeze({
   ABA_AUDITORIA_VINCULOS: '_AuditoriaVinculosLichess',
   ID_PLANILHA_ORIGINAL: '1YlGQwfYdT_J633frIN_wPiW3ExYqjC1gcum2xi1KwGc',
   MAX_CONSULTAS: 80,
+  MAX_CONSULTAS_DESCOBERTA: 8,
   PAUSA_MS: 400
 });
 
@@ -41,9 +42,11 @@ function sincronizarAutomaticamente() {
   const props = PropertiesService.getScriptProperties();
   const habilitado = props.getProperty('EXECUCAO_AUTOMATICA_HABILITADA') === 'SIM';
   console.log('Reinos: execução automática ' + (habilitado ? 'habilitada' : 'em simulação'));
-  const descoberta = descobrirPartidas_(habilitado);
+  // A descoberta automática não foi homologada: evita dezenas de chamadas
+  // repetidas e quaisquer gravações de vínculos sem fonte confiável.
+  // simularDescoberta continua disponível manualmente para diagnóstico.
   const consolidacao = executarSincronizacao_(habilitado);
-  return Object.assign({}, consolidacao, {descoberta: descoberta});
+  return Object.assign({}, consolidacao, {descoberta: {status:'desabilitada',motivo:'pendente de homologação'}});
 }
 
 /**
@@ -593,12 +596,12 @@ function descobrirPartidas_(escrever, filtro) {
       // Se a mesma dupla e cores aparecem duas vezes nesta edição, vínculo ambíguo.
       const occurrences=grid.filter(row=>normalizarNome_(row[0])===white && normalizarNome_(row[3])===black).length;
       if(occurrences!==1){resumo.ambiguos++;continue;}
-      if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS)break;
+      if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA)break;
       const games=[];
       let complete=true,retornoPorPerfil=[];
       console.log('Reinos: verificando linha '+rowNumber+' ('+expected[0]+' x '+expected[3]+')');
       for(const [nick,opponent] of [[w,b],[b,w]]){
-        if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS)break;
+        if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA)break;
         const lookup=jogosPublicosPorDupla_(nick,opponent,desde);
         resumo.consultas++;
         if(lookup.status===429){resumo.erros++;console.log('Reinos: HTTP 429, busca interrompida.');return resumo;}
@@ -634,7 +637,7 @@ function descobrirPartidas_(escrever, filtro) {
           console.log('Reinos: linha '+rowNumber+': conta autenticada confirmou '+
             identificados.length+' jogo(s) ativo(s) com adversário e cor corretos.');
           for(const candidato of identificados){
-            if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS)break;
+            if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA)break;
             resumo.consultas++;
             const info=consultarPartida_(candidato.gameId,token);
             if(info&&info.game){
@@ -674,7 +677,7 @@ function descobrirPartidas_(escrever, filtro) {
         if(ids[gid]||vistos[gid])continue;
         let game=listaGame;
         if(game.daysPerTurn===undefined||game.daysPerTurn===null){
-          if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS){
+          if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA){
             inconclusivos[gid]=game;resumo.prazoNaoConfirmado++;continue;
           }
           resumo.consultas++;resumo.consultasDetalhes++;

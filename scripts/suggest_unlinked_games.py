@@ -28,7 +28,7 @@ PUBLIC_ID = re.compile(r"^[A-Za-z0-9]{8}$")
 MAX_GAMES = 80
 MAX_RESPONSE = 750_000
 MAX_PER_MATCH = 3
-MAX_QUERIES = 18
+MAX_QUERIES = 4  # 2 confrontos por hora; rotação entre todas as duplas pendentes
 MIN_DATE = date(2020, 1, 1)
 TERMINAL_WIN = {"mate", "resign", "timeout", "outoftime", "cheat", "variantend", "unknownfinish"}
 TERMINAL_DRAW = {"draw", "stalemate"}
@@ -197,12 +197,17 @@ def candidate_matches(data, *, lookup=fetch_user_games, now=None):
         result["status"] = "sem_jogadores_verificados"
         return result
 
+    # Rodízio por janela de uma hora: nunca insistir sempre nos primeiros pares.
+    # Duas consultas por confronto, até 4 chamadas por execução.
+    offset = (int(now.timestamp() // 3600) * max(1,MAX_QUERIES // 2)) % len(ordered_expected)
+    rotated = ordered_expected[offset:] + ordered_expected[:offset]
+    result["queries"] = 0
     by_match = {}
     seen = set()
     rate_limited = False
-    for (white_uid, black_uid), matches_for_pair in ordered_expected:
-        if result["checkedPlayers"] >= MAX_QUERIES or rate_limited:
-            result["status"] = "parcial" if len(ordered_expected) > result["checkedPlayers"] else result["status"]
+    for (white_uid, black_uid), matches_for_pair in rotated:
+        if result["queries"] + 2 > MAX_QUERIES or rate_limited:
+            result["status"] = "parcial"
             break
         white_name = matches_for_pair[0]["white"]
         black_name = matches_for_pair[0]["black"]
@@ -210,7 +215,8 @@ def candidate_matches(data, *, lookup=fetch_user_games, now=None):
         pair_games = []
         for nick, opponent in [(people[white_name]["lichess"],people[black_name]["lichess"]),
                                (people[black_name]["lichess"],people[white_name]["lichess"])]:
-            if result["checkedPlayers"] >= MAX_QUERIES: break
+            if result["queries"] >= MAX_QUERIES: break
+            result["queries"] += 1
             try:
                 try:
                     games = lookup(nick, since_ms, vs=opponent)
@@ -267,6 +273,8 @@ def candidate_matches(data, *, lookup=fetch_user_games, now=None):
                          "daysPerTurnVerified": days == 1,
                          "result": public_result}
             by_match.setdefault(m.get("id"), []).append(candidate)
+    if result["status"] == "parcial" and not result["warnings"]:
+        result["warnings"].append("Busca por amostragem: outros confrontos serão consultados em execuções futuras.")
     for m in absent:
         choices = by_match.get(m.get("id"), [])
         choices.sort(key=lambda c: (c["createdAt"], c["gameId"]), reverse=True)

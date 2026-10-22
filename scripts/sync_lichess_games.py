@@ -321,7 +321,7 @@ def main(argv=None):
         data = json.loads(args.file.read_text(encoding='utf-8'))
         cache = load_cache(args.cache)
         def lookup(game_id):
-            return fetch_public_game(game_id, token=token or None)
+            return fetch_public_game(game_id, token=token or None, attempts=1)
 
         sync_games(data, cache=cache, lookup=lookup, refresh_active=args.refresh_active)
         # Salvar antes de anunciar sucesso; artefato Pages é só dado derivado.

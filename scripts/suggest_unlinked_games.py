@@ -28,7 +28,7 @@ PUBLIC_ID = re.compile(r"^[A-Za-z0-9]{8}$")
 MAX_GAMES = 80
 MAX_RESPONSE = 750_000
 MAX_PER_MATCH = 3
-MAX_QUERIES = 12
+MAX_QUERIES = 18
 MIN_DATE = date(2020, 1, 1)
 TERMINAL_WIN = {"mate", "resign", "timeout", "outoftime", "cheat", "variantend", "unknownfinish"}
 TERMINAL_DRAW = {"draw", "stalemate"}
@@ -99,7 +99,7 @@ def result_of(game):
     return None
 
 
-def fetch_user_games(nick, since_ms, *, opener=urlopen):
+def fetch_user_games(nick, since_ms, *, vs=None, opener=urlopen):
     """Le ate MAX_GAMES jogos recentes NDJSON; uma requisicao anonima por usuario."""
     if not NICK.fullmatch(nick):
         raise ValueError("Nick invalido")
@@ -108,6 +108,10 @@ def fetch_user_games(nick, since_ms, *, opener=urlopen):
         "ongoing": "true", "finished": "true", "moves": "false",
         "clocks": "false", "evals": "false", "opening": "false", "sort": "dateDesc",
     })
+    if vs is not None:
+        if not NICK.fullmatch(vs):
+            raise ValueError("Adversario invalido")
+        params += "&" + urlencode({"vs": vs})
     url = "https://lichess.org/api/games/user/" + quote(nick, safe="") + "?" + params
     req = Request(url, headers={
         "Accept": "application/x-ndjson",
@@ -184,25 +188,47 @@ def candidate_matches(data, *, lookup=fetch_user_games, now=None):
         white_users[white] = people[m["white"]]["lichess"]
     # Mesmos pares em rodadas distintas sao ambiguos, nao sugerir.
     expected = {key: matches for key, matches in expected.items() if len(matches) == 1}
+    # Consultas dirigidas: API recebe um adversário exato por vez. Isso evita
+    # omitir partidas do campeonato se 80 jogos recentes do perfil são outros jogos.
+    # Priorizar partidas de rodadas autorizadas (inclusive atrasadas).
+    reference_round = active.get("currentRound") or 1
+    ordered_expected = sorted(expected.items(), key=lambda kv: (kv[1][0].get("round", 999) > reference_round + 1, kv[1][0].get("round", 999)))
     if not expected:
         result["status"] = "sem_jogadores_verificados"
         return result
 
     by_match = {}
     seen = set()
-    for user_id, nick in sorted(white_users.items())[:MAX_QUERIES]:
-        try:
-            games = lookup(nick, since_ms)
-            result["checkedPlayers"] += 1
-        except RateLimitReached:
-            result["status"] = "parcial"
-            result["warnings"].append("Limite do Lichess atingido; busca interrompida.")
+    rate_limited = False
+    for (white_uid, black_uid), matches_for_pair in ordered_expected:
+        if result["checkedPlayers"] >= MAX_QUERIES or rate_limited:
+            result["status"] = "parcial" if len(ordered_expected) > result["checkedPlayers"] else result["status"]
             break
-        except SearchUnavailable:
-            result["status"] = "parcial"
-            result["warnings"].append("Um perfil nao pode ser consultado; resultados podem estar incompletos.")
-            continue
-        for game in games:
+        white_name = matches_for_pair[0]["white"]
+        black_name = matches_for_pair[0]["black"]
+        # Validar nos dois sentidos: a API pública pode omitir jogos de um perfil.
+        pair_games = []
+        for nick, opponent in [(people[white_name]["lichess"],people[black_name]["lichess"]),
+                               (people[black_name]["lichess"],people[white_name]["lichess"])]:
+            if result["checkedPlayers"] >= MAX_QUERIES: break
+            try:
+                try:
+                    games = lookup(nick, since_ms, vs=opponent)
+                except TypeError:
+                    # Compatibilidade com lookup injetado nos testes antigos.
+                    games = lookup(nick, since_ms)
+                result["checkedPlayers"] += 1
+                pair_games.extend(games)
+            except RateLimitReached:
+                result["status"] = "parcial"
+                result["warnings"].append("Limite do Lichess atingido; busca interrompida.")
+                rate_limited = True
+                break
+            except SearchUnavailable:
+                result["status"] = "parcial"
+                result["warnings"].append("Um perfil não pôde ser consultado; a busca pode estar incompleta.")
+                continue
+        for game in pair_games:
             if not isinstance(game, dict):
                 continue
             gid = game.get("id")
@@ -217,7 +243,7 @@ def candidate_matches(data, *, lookup=fetch_user_games, now=None):
             if days is not None and (isinstance(days, bool) or not isinstance(days, (int, float)) or days != 1):
                 continue
             sides = api_users(game)
-            if not sides or sides[0] != user_id or sides not in expected:
+            if not sides or sides != (white_uid, black_uid) or sides not in expected:
                 continue
             created = epoch_ms(game.get("createdAt"))
             if not created or created.timestamp() * 1000 < since_ms or created > now + timedelta(minutes=2):

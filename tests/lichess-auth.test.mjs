@@ -49,7 +49,7 @@ test('callback válido autentica conta e revoga token ao sair sem persisti-lo',a
  assert.equal((await c.auth.completeRedirect()).status,'connected');
  assert.equal(c.auth.account.username,'Humberto_M');
  assert.equal(c.data.size,0);
- assert.equal(c.calls.find(x=>x[0]==='history')[2],'/SiteDoCampeonato/#inicio');
+ assert.equal(c.calls.find(x=>x[0]==='history')[3],'/SiteDoCampeonato/#inicio');
  assert.equal(seen[0][1].body.includes(pending.verifier),true);
  assert.equal(seen[1][1].headers.Authorization,'Bearer abcdefghijklmnop');
  const result=await c.auth.logout();

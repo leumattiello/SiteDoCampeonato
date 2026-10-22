@@ -26,3 +26,6 @@ O gatilho temporal, após autorização, deve executar **somente** `sincronizarA
 5. Se a API não expuser o jogo ou houver ambiguidades, usar link fornecido pelo jogador. **Não inventar ID**, nem forçar associação ou modificar resultados manualmente.
 
 Não salve tokens no código, no repositório ou em células. Gravações revalidam A:H antes de aplicar mas não são atômicas com edições humanas simultâneas.
+
+## Diagnóstico de partida não detectada
+Execute `diagnosticarHumbertoLigia()` no Apps Script atualizado: a função **não escreve** e examina apenas a linha Humberto (brancas) × Ligia (pretas). O log mostra jogos retornados por perfil, jogos da dupla, modalidade, datas, campo `daysPerTurn` ausente e quantos jogos foram confirmados. Quando `daysPerTurn` falta na listagem, o script tenta confirmar o prazo no endpoint público de exportação do jogo. Se o prazo continuar ausente, registra a pendência e **não preenche F automaticamente**. Nenhum token nem segredo é exibido.

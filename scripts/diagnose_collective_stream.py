@@ -23,7 +23,7 @@ def test_stream():
         "--connect-timeout", "6", "--max-time", "14",
         "--request", "POST", "--header", "Content-Type: text/plain",
         "--header", "Accept: application/x-ndjson",
-        "--data-binary", "@-", "--write-out", "\\n" + MARK + "%{http_code}\\n",
+        "--data-binary", "@-", "--write-out", "\n" + MARK + "%{http_code}\n",
         ENDPOINT,
     ]
     print("API coletiva Lichess: iniciando 1 POST sem token (9 participantes, limite 14s).")
@@ -34,7 +34,7 @@ def test_stream():
         print("ERRO cliente:", type(e).__name__)
         return 2
     body = proc.stdout
-    status = re.search(MARK + r"(\\d{3})", body)
+    status = re.search(MARK + r"(\d{3})", body)
     http_status = status.group(1) if status else "desconhecido"
     print("HTTP:", http_status, "curl exit:", proc.returncode)
     if proc.returncode not in (0, 28):

@@ -43,7 +43,7 @@ function sincronizarAutomaticamente() {
   console.log('Reinos: execução automática ' + (habilitado ? 'habilitada' : 'em simulação'));
   const descoberta = descobrirPartidas_(habilitado);
   const consolidacao = executarSincronizacao_(habilitado);
-  return {descoberta: descoberta, consolidacao: consolidacao};
+  return Object.assign({}, consolidacao, {descoberta: descoberta});
 }
 
 /**

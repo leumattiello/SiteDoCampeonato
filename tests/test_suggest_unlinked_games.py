@@ -37,6 +37,15 @@ class SuggestionsTest(unittest.TestCase):
     def test_results_conflict_rejected(self):
         p=payload();p["tournaments"][0]["matches"][0]["result"]="1-0"
         self.assertEqual(candidate_matches(p,lookup=lambda n,s:[game()],now=NOW)["candidates"],[])
+    def test_pair_queries_both_profiles_and_exact_opponents(self):
+        calls=[]
+        def lookup(nick,since,vs=None):
+            calls.append((nick,vs))
+            return [game()] if nick=='bia123' else []
+        x=candidate_matches(payload(),lookup=lookup,now=NOW)
+        self.assertIn(('ana123','bia123'),calls)
+        self.assertIn(('bia123','ana123'),calls)
+        self.assertEqual(len(x['candidates']),1)
     def test_verified_id(self):
         self.assertEqual(verified_id(payload()["players"][0]),"ana123")
         self.assertIsNone(verified_id({"name":"x","lichess":"abc","lichessValidation":{"status":"valido","id":"wrong"}}))

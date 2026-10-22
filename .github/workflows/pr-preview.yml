@@ -43,6 +43,9 @@ jobs:
         run: python scripts/resolve_lichess_results.py
       - name: Sugerir partidas sem vínculo (API pública, sem token)
         run: python scripts/suggest_unlinked_games.py
+      - name: Teste diagnóstico da API coletiva Lichess (não bloqueante)
+        continue-on-error: true
+        run: python scripts/diagnose_collective_stream.py
       - name: Preparar site de teste
         run: |
           mkdir -p _preview/css _preview/js _preview/data

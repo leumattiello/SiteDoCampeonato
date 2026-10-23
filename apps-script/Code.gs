@@ -163,6 +163,7 @@ function executarSincronizacao_(solicitouEscrita) {
         (result === null || !valoresIguais_(expected[1], result[0]) ||
          !valoresIguais_(expected[2], result[1]));
       const podeMudarStatus = statusProposto &&
+        !(statusProposto === 'Em andamento' && normalizarNome_(expected[4]).toLowerCase() === 'finalizado') &&
         (statusProposto === 'Finalizado'
           ? !conflitoResultado
           : celulaVazia_(expected[1]) && celulaVazia_(expected[2])) &&
@@ -779,7 +780,7 @@ function gravarStatusSeInalterado_(sheet,rowNumber,expected,status,gameId,spread
       normalizarNome_(before[4]).toLowerCase()==='bye') return false;
   // Status ativo não substitui placares, inclusive um zero isolado.
   if (status==='Em andamento' && (!celulaVazia_(before[1]) || !celulaVazia_(before[2]))) return false;
-  if (before[4]===status) return false;
+  if (before[4]===status || (status==='Em andamento' && normalizarNome_(before[4]).toLowerCase()==='finalizado')) return false;
   sheet.getRange(rowNumber,5).setValue(status);
   SpreadsheetApp.flush();
   if(sheet.getRange(rowNumber,5).getValue()!==status)

@@ -1,0 +1,1681 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "spreadsheetId": "1YlGQwfYdT_J633frIN_wPiW3ExYqjC1gcum2xi1KwGc",
+    "type": "Google Sheets",
+    "lastSync": "2026-10-23T12:47:54+00:00",
+    "lichessPlayersCheckedAt": "2026-10-23T12:47:54+00:00",
+    "lichessCorrespondenceCheckedAt": "2026-10-23T12:47:54+00:00",
+    "lichessGamesCheckedAt": "2026-10-23T12:47:58+00:00",
+    "lichessGamesSummary": {
+      "cache": 18,
+      "tentativas": 2,
+      "consultados": 2,
+      "links": 20,
+      "jogos_unicos": 20,
+      "links_invalidos": 0
+    },
+    "lichessResultsCheckedAt": "2026-10-23T12:47:59+00:00",
+    "lichessResultsSummary": {
+      "sem_dados_confirmados": 16,
+      "manuais": 18,
+      "bye_preservado": 9,
+      "em_andamento": 2
+    }
+  },
+  "tournaments": [
+    {
+      "id": "atual",
+      "title": "Campeonato Atual",
+      "subtitle": "Edição em andamento",
+      "sheet": "2",
+      "currentRound": 6,
+      "active": true,
+      "matches": [
+        {
+          "id": "ed2-r1-l2",
+          "round": 1,
+          "white": "Enrico",
+          "black": "Emanuel",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 2
+        },
+        {
+          "id": "ed2-r1-l3",
+          "round": 1,
+          "white": "Jose Adolfo",
+          "black": "Wendell",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/GPKtzIwS",
+          "start": "2026-09-12",
+          "end": "2026-09-17",
+          "sheetRow": 3,
+          "lichessGame": {
+            "id": "GPKtzIwS",
+            "url": "https://lichess.org/GPKtzIwS",
+            "status": "resign",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "adolpho74",
+                "name": "Adolpho74"
+              },
+              "black": {
+                "id": "emanlasker",
+                "name": "emanlasker"
+              }
+            },
+            "createdAt": "2026-09-12T18:10:55+00:00",
+            "lastMoveAt": "2026-09-17T16:45:41+00:00",
+            "moves": "e4 c5 c3 d6 d4 Nc6 Nf3 Bg4 Be2 g6 h3 Bxf3 Bxf3 Bg7 d5 Ne5 Qa4+ Qd7 Qxd7+ Nxd7 O-O Ngf6 Bf4 O-O Nd2 b5 a3 Ne8 Bg4 Ne5 Be2 c4 a4 Nd3 Bxd3 cxd3 axb5 Nc7 Rfd1 Nxb5 Nc4 Bxc3 bxc3 Nxc3 Re1 Ne2+ Rxe2 dxe2 Re1 Rfc8 Nd2 a5 f3 a4 Be3 Rc3 Rxe2 a3 Bd4 Rd3 Ba1 Rc8 Nf1 Rc1 Ra2 Rdd1",
+            "opening": {
+              "name": "Sicilian Defense: Alapin Variation",
+              "eco": "B22"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r1-l4",
+          "round": 1,
+          "white": "Humberto",
+          "black": "Anesio",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/y8FmfUYn",
+          "start": "2026-09-12",
+          "end": "2026-09-16",
+          "sheetRow": 4,
+          "lichessGame": {
+            "id": "y8FmfUYn",
+            "url": "https://lichess.org/y8FmfUYn",
+            "status": "mate",
+            "winner": "white",
+            "players": {
+              "white": {
+                "id": "humberto_m",
+                "name": "Humberto_M"
+              },
+              "black": {
+                "id": "titoricci",
+                "name": "TitoRicci"
+              }
+            },
+            "createdAt": "2026-09-12T16:19:12+00:00",
+            "lastMoveAt": "2026-09-16T21:35:06+00:00",
+            "moves": "e4 e5 Nf3 d6 Bc4 h6 d4 Qf6 c3 Be7 O-O Nc6 d5 Nd8 Ne1 Qg6 f3 a6 Be3 h5 Nd2 h4 b4 h3 g3 Bh4 Bf2 Nf6 Be2 Nh5 Kh1 Bxg3 Bxg3 Nxg3+ hxg3 Qxg3 Rg1 Qf2 Nd3 Qe3 Kh2 Bd7 Rxg7 f5 Nc4 Qh6 Qg1 Rf8 Qg6+ Qxg6 Rxg6 fxe4 fxe4 Bb5 Ncb2 Bxd3 Nxd3 Nf7 Bg4 Nh8 Rg7 Rf6 Rg8+ Rf8 Rxf8+ Kxf8 Rf1+ Ke7 Bh5 Rf8 Rxf8 Kxf8 Kxh3 Ke7 Kg4 Kf6 c4 b6 c5 Ke7 Kf5 Nf7 Bxf7 Kxf7 a4 Ke7 cxb6 cxb6 Nb2 Kd7 b5 a5 Nc4 Kc7 Ke6 Kd8 Kxd6 Kc8 Kxe5 Kb7 d6 Kc8 Nxb6+ Kd8 Kd5 Ke8 d7+ Kd8 Kc6 Ke7 Kc7 Kf7 d8=Q Kg7 Qd6 Kf7 e5 Ke8 Qd7+ Kf8 e6 Kg8 Nd5 Kf8 Qf7#",
+            "opening": {
+              "name": "Philidor Defense",
+              "eco": "C41"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r1-l5",
+          "round": 1,
+          "white": "Alice",
+          "black": "Ligia",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/LpxUvsgh",
+          "start": "2026-09-14",
+          "end": "2026-09-20",
+          "sheetRow": 5,
+          "lichessGame": {
+            "id": "LpxUvsgh",
+            "url": "https://lichess.org/LpxUvsgh",
+            "status": "mate",
+            "winner": "white",
+            "players": {
+              "white": {
+                "id": "akiqui",
+                "name": "Akiqui"
+              },
+              "black": {
+                "id": "raducol",
+                "name": "Raducol"
+              }
+            },
+            "createdAt": "2026-09-14T16:51:54+00:00",
+            "lastMoveAt": "2026-09-20T20:55:28+00:00",
+            "moves": "d4 d5 Nc3 Nc6 Nf3 Be6 Bf4 Bf5 e3 e6 Bd3 Nf6 Bxf5 exf5 g3 Bb4 O-O O-O a3 Ba5 b4 Bb6 Ne5 Ne7 Qf3 a5 b5 Qd6 Ng6 Qe6 Nxf8 Rxf8 Rfe1 c5 a4 cxd4 exd4 Ne4 Nxe4 fxe4 Qc3 Nf5 Be5 Bxd4 Bxd4 Rc8 Qb2 f6 Rac1 Rc4 c3 Rxa4 Red1 e3 fxe3 Nxe3 Bxe3 Qxe3+ Qf2 Qh6 Rxd5 g5 Rd7 g4 Re1 Qf8 Qe2 Qc5+ Kg2 Qc8 Qe8+ Qxe8 Rxe8#",
+            "opening": {
+              "name": "Queen's Pawn Game: Chigorin Variation",
+              "eco": "D00"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r1-l6",
+          "round": 1,
+          "white": "Gabriel",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 1.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 6
+        },
+        {
+          "id": "ed2-r2-l9",
+          "round": 2,
+          "white": "Wendell",
+          "black": "Humberto",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/cQiJSjqL9eXl",
+          "start": "2026-09-19",
+          "end": "2026-09-26",
+          "sheetRow": 9,
+          "lichessGame": {
+            "id": "cQiJSjqL",
+            "url": "https://lichess.org/cQiJSjqL",
+            "status": "mate",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "emanlasker",
+                "name": "emanlasker"
+              },
+              "black": {
+                "id": "humberto_m",
+                "name": "Humberto_M"
+              }
+            },
+            "createdAt": "2026-09-19T23:43:16+00:00",
+            "lastMoveAt": "2026-09-26T14:00:15+00:00",
+            "moves": "d4 d5 c4 dxc4 e4 b5 Nf3 Bb7 Nc3 c6 Be2 e6 O-O h6 e5 Ne7 a4 a6 Ne4 Nd5 b3 cxb3 Qxb3 Nd7 Ba3 b4 Nd6+ Bxd6 exd6 a5 Ne5 N7b6 Qg3 Qg5 Bc1 Qxg3 fxg3 Nf6 Bh5 Nxh5 Rxf7 O-O-O Rc7+ Kb8 Nf7 Nd5 Nxh8 Nxc7 Nf7 Rd7 g4 Ne8 Ne5 Rxd6 gxh5 Rxd4 Nf3 Rc4 Bb2 c5 Be5+ Kc8 Kf2 Rc2+ Kg3 c4 h4 Nf6 Ne1 Re2 Bd4 Kc7 Kh3 e5 Bc5 Nxh5 Kg4 Nf4 g3 Ne6 Ba7 g6 Rc1 h5+ Kh3 c3 Bg1 Nd4 g4 Bc8 Kg3 Bxg4 Nd3 Nf5#",
+            "opening": {
+              "name": "Queen's Gambit Accepted: Central Variation, Greco Variation",
+              "eco": "D20"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r2-l10",
+          "round": 2,
+          "white": "Emanuel",
+          "black": "Jose Adolfo",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/142tCkpS",
+          "start": "2026-09-21",
+          "end": "2026-09-24",
+          "sheetRow": 10,
+          "lichessGame": {
+            "id": "142tCkpS",
+            "url": "https://lichess.org/142tCkpS",
+            "status": "resign",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "emanuelscorrea",
+                "name": "emanuelscorrea"
+              },
+              "black": {
+                "id": "adolpho74",
+                "name": "Adolpho74"
+              }
+            },
+            "createdAt": "2026-09-22T01:47:58+00:00",
+            "lastMoveAt": "2026-09-24T16:47:18+00:00",
+            "moves": "e4 c5 c3 d5 f3 dxe4 fxe4 Nc6 Nf3 Nf6 Qa4 Bd7 Qc4 e6 d4 cxd4 cxd4 Nxe4 d5 Nd6 Qb3 Na5 Qd1 exd5 Qxd5 Be6 Bb5+ Nxb5 Qxb5+ Bd7 Qh5 g6 Qe5+ Qe7 Bd2 Nc6 Bc3 Nxe5 Nxe5 Bg7 Nd2 Bxe5 O-O-O Bxc3 bxc3 Qa3+ Kc2 Bf5+",
+            "opening": {
+              "name": "Sicilian Defense: Alapin Variation",
+              "eco": "B22"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r2-l11",
+          "round": 2,
+          "white": "Alice",
+          "black": "Gabriel",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/NAUMADnU",
+          "start": "2026-09-21",
+          "end": "2026-09-23",
+          "sheetRow": 11,
+          "lichessGame": {
+            "id": "NAUMADnU",
+            "url": "https://lichess.org/NAUMADnU",
+            "status": "mate",
+            "winner": "white",
+            "players": {
+              "white": {
+                "id": "akiqui",
+                "name": "Akiqui"
+              },
+              "black": {
+                "id": "biel009",
+                "name": "Biel009"
+              }
+            },
+            "createdAt": "2026-09-21T22:54:31+00:00",
+            "lastMoveAt": "2026-09-23T14:38:31+00:00",
+            "moves": "d4 Nc6 Nf3 e5 d5 Nce7 e4 Nf6 Bd3 Nexd5 exd5 Bd6 Be2 Nxd5 Qxd5 c6 Qxd6 Rg8 Qd3 g6 Ng5 f5 Qc4 b5 Qf7#",
+            "opening": {
+              "name": "Mikenas Defense",
+              "eco": "A40"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r2-l12",
+          "round": 2,
+          "white": "Ligia",
+          "black": "Anesio",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/UAQnAodu",
+          "start": "2026-09-21",
+          "end": "2026-09-24",
+          "sheetRow": 12,
+          "lichessGame": {
+            "id": "UAQnAodu",
+            "url": "https://lichess.org/UAQnAodu",
+            "status": "mate",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "raducol",
+                "name": "Raducol"
+              },
+              "black": {
+                "id": "titoricci",
+                "name": "TitoRicci"
+              }
+            },
+            "createdAt": "2026-09-22T01:01:11+00:00",
+            "lastMoveAt": "2026-09-25T00:07:17+00:00",
+            "moves": "d4 d5 Nf3 e6 Bf4 f6 e3 a6 Bd3 h5 Nc3 g5 Bg3 h4 Bg6+ Ke7 Be5 Rh6 Qd3 fxe5 dxe5 Bg7 O-O Kd7 Nxg5 Qxg5 f4 Qxg6 g4 Qxg4+ Kf2 Qh3 Rg1 Qxh2+ Rg2 Qh3 Nxd5 Ke8 Rxg7 exd5 Rxg8+ Ke7 Rag1 Kd7 Qxd5+ Rd6 Qc5 Rd2+ Ke1 b6 Qb4 Qxe3+ Kf1 Qf2#",
+            "opening": {
+              "name": "Queen's Pawn Game: London System, with e6",
+              "eco": "D02"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r2-l13",
+          "round": 2,
+          "white": "Enrico",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 1.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 13
+        },
+        {
+          "id": "ed2-r3-l15",
+          "round": 3,
+          "white": "Jose Adolfo",
+          "black": "Humberto",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/lfgekOPqYV2m",
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "sheetRow": 15,
+          "lichessGame": {
+            "id": "lfgekOPq",
+            "url": "https://lichess.org/lfgekOPq",
+            "status": "resign",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "adolpho74",
+                "name": "Adolpho74"
+              },
+              "black": {
+                "id": "humberto_m",
+                "name": "Humberto_M"
+              }
+            },
+            "createdAt": "2026-09-26T14:53:06+00:00",
+            "lastMoveAt": "2026-10-02T23:24:06+00:00",
+            "moves": "e4 e5 Nf3 Nc6 Bc4 Bc5 c3 Nf6 d3 h6 O-O d6 Nbd2 a6 Bb3 Bg4 h3 Bh5 Re1 Qd7 Nf1 g5 Ng3 Bg6 Be3 g4 hxg4 Nxg4 Bxc5 dxc5 Nh4 O-O-O Nhf5 h5 f3 Nf6 Bc2 h4 Nf1 Bxf5 exf5 Qxf5 Ne3 Qg5 Qe2 Nh5 Ng4 Nf4 Qe3 f5",
+            "opening": {
+              "name": "Italian Game: Classical Variation, Giuoco Pianissimo",
+              "eco": "C54"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r3-l16",
+          "round": 3,
+          "white": "Wendell",
+          "black": "Enrico",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/McJTD30L",
+          "start": "2026-10-03",
+          "end": "2026-10-09",
+          "sheetRow": 16,
+          "lichessGame": {
+            "id": "McJTD30L",
+            "url": "https://lichess.org/McJTD30L",
+            "status": "resign",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "emanlasker",
+                "name": "emanlasker"
+              },
+              "black": {
+                "id": "xarnosqui",
+                "name": "Xarnosqui"
+              }
+            },
+            "createdAt": "2026-10-04T00:05:41+00:00",
+            "lastMoveAt": "2026-10-09T17:25:01+00:00",
+            "moves": "d4 d5 c4 c6 Nc3 Nf6 e3 Bf5 Bd3 Bxd3 Qxd3 e6 a3 Nbd7 Nf3 Bd6 O-O O-O cxd5 cxd5 Bd2 Rc8 Ne2 Ne4 Be1 Ndf6 Nf4 Bxf4 exf4 Qb6 b4 a6 Ng5 h6 Nxe4 Nxe4 f3 Nd6 Bf2 Rc7 Rac1 Rfc8 Rc5 Nc4 f5 Re8 fxe6 fxe6 f4 Rf7 Bg3 Qd8 Re1 b6 Rxc4 dxc4 Qxc4 b5 Qd3 Qd7 Re4 Rc8 Qe3 Rc4 Bf2 Qc7 Rxe6 Rc1+ Be1 Qxf4 Qxf4 Rxf4 d5 Rd4 d6 Kf7 Re7+ Kf6 Re3 Rxd6 Kf2 Re6 Bc3+ Ke7 Rxe6+ Kxe6 Bxg7 h5 Kg3 Rc2 Kf3 Ra2 h4 Kf5 Ke3 Rxg2 Bf8 Rg3+ Kd2 Rxa3 Be7 Ke4 Kc2 Rh3 Kd2 Rh2+ Kc3 Kd5 Kb3 Rg2 Kc3 Rg4 Kd3 Ke6",
+            "opening": {
+              "name": "Slav Defense",
+              "eco": "D10"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r3-l17",
+          "round": 3,
+          "white": "Ligia",
+          "black": "Emanuel",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/XQi7oA9y",
+          "start": "2026-10-10",
+          "end": "2026-10-13",
+          "sheetRow": 17,
+          "lichessGame": {
+            "id": "XQi7oA9y",
+            "url": "https://lichess.org/XQi7oA9y",
+            "status": "mate",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "raducol",
+                "name": "Raducol"
+              },
+              "black": {
+                "id": "emanuelscorrea",
+                "name": "emanuelscorrea"
+              }
+            },
+            "createdAt": "2026-10-10T22:59:13+00:00",
+            "lastMoveAt": "2026-10-13T20:47:26+00:00",
+            "moves": "e4 d5 exd5 Qxd5 Nc3 Qf5 Nf3 e5 Nd5 Na6 Bb5+ c6 Ba4 b5 Bb3 e4 Nd4 Qd7 O-O cxd5 Nxb5 Qxb5 Qh5 Nf6 Qe5+ Be7 a4 Qc6 a5 O-O Qxe7 d4 d3 exd3 cxd3 Bb7 Bg5 Qxg2#",
+            "opening": {
+              "name": "Scandinavian Defense: Mieses-Kotroc Variation",
+              "eco": "B01"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-15T23:41:25+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r3-l18",
+          "round": 3,
+          "white": "Gabriel",
+          "black": "Anesio",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/Ms8Z3Hsw",
+          "start": "2026-09-29",
+          "end": "2026-10-03",
+          "sheetRow": 18,
+          "lichessGame": {
+            "id": "Ms8Z3Hsw",
+            "url": "https://lichess.org/Ms8Z3Hsw",
+            "status": "mate",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "biel009",
+                "name": "Biel009"
+              },
+              "black": {
+                "id": "titoricci",
+                "name": "TitoRicci"
+              }
+            },
+            "createdAt": "2026-09-29T20:01:56+00:00",
+            "lastMoveAt": "2026-10-03T20:50:04+00:00",
+            "moves": "e4 e5 Nf3 d6 Nc3 c6 Bc4 h6 Ne2 Qf6 c3 Qg6 d4 Nd7 Bd3 Qxg2 dxe5 Qxh1+ Neg1 Nxe5 Nd2 Qxg1+ Nf1 Bh3 Kd2 Qxf2+ Be2 Bxf1 Kc2 Bxe2 Qh1 Bf3+ Bd2 Bxh1 Rxh1 Nc4 b3 Qxd2+ Kb1 Qb2#",
+            "opening": {
+              "name": "Philidor Defense",
+              "eco": "C41"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r3-l19",
+          "round": 3,
+          "white": "Alice",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 1.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 19
+        },
+        {
+          "id": "ed2-r4-l21",
+          "round": 4,
+          "white": "Humberto",
+          "black": "Enrico",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/PGIJARSe",
+          "start": "2026-10-10",
+          "end": "2026-10-16",
+          "sheetRow": 21,
+          "lichessGame": {
+            "id": "PGIJARSe",
+            "url": "https://lichess.org/PGIJARSe",
+            "status": "resign",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "humberto_m",
+                "name": "Humberto_M"
+              },
+              "black": {
+                "id": "xarnosqui",
+                "name": "Xarnosqui"
+              }
+            },
+            "createdAt": "2026-10-10T20:52:56+00:00",
+            "lastMoveAt": "2026-10-16T11:51:34+00:00",
+            "moves": "e4 c5 Nc3 Nc6 g3 d6 Bg2 g6 Nge2 Bg7 d3 Rb8 Nd5 e6 Ne3 b5 Rb1 Nge7 O-O O-O f4 f5 c3 a5 g4 b4 Bd2 fxe4 dxe4 d5 e5 Ba6 Rc1 g5 fxg5 Nxe5 Nf4 Bxf1 Nxe6 Qd6 Nxg7 Bxg2 Ngf5 Nxf5 Nxf5 Rxf5 gxf5 Be4 cxb4 Nf3+ Kf2 Qxh2+ Ke3",
+            "opening": {
+              "name": "Sicilian Defense: Closed, Fianchetto Variation",
+              "eco": "B24"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T16:36:57+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r4-l22",
+          "round": 4,
+          "white": "Wendell",
+          "black": "Emanuel",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/WaNjdDNW",
+          "start": "2026-10-14",
+          "end": "2026-10-14",
+          "sheetRow": 22,
+          "lichessGame": {
+            "id": "WaNjdDNW",
+            "url": "https://lichess.org/WaNjdDNW",
+            "status": "resign",
+            "winner": "white",
+            "players": {
+              "white": {
+                "id": "emanlasker",
+                "name": "emanlasker"
+              },
+              "black": {
+                "id": "emanuelscorrea",
+                "name": "emanuelscorrea"
+              }
+            },
+            "createdAt": "2026-10-14T13:37:15+00:00",
+            "lastMoveAt": "2026-10-14T16:19:03+00:00",
+            "moves": "e4 d5 exd5 Qxd5 Nc3 Qe6+ Be2 Nc6 Nf3 Qg4 O-O b6 Ne5 Qe6 d4 Nxe5 dxe5 Qxe5 Bf3 e6 Bxa8 Bd6 g3 Nf6 Bc6+ Bd7 Bxd7+ Kxd7 Bf4 Qc5 Bxd6 cxd6 Re1 h5 Ne4 Qg5",
+            "opening": {
+              "name": "Scandinavian Defense: Mieses-Kotroc Variation",
+              "eco": "B01"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-15T23:41:25+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r4-l23",
+          "round": 4,
+          "white": "Gabriel",
+          "black": "Jose Adolfo",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/chFrBVC5",
+          "start": "2026-10-05",
+          "end": "2026-10-11",
+          "sheetRow": 23,
+          "lichessGame": {
+            "id": "chFrBVC5",
+            "url": "https://lichess.org/chFrBVC5",
+            "status": "mate",
+            "winner": "black",
+            "players": {
+              "white": {
+                "id": "biel009",
+                "name": "Biel009"
+              },
+              "black": {
+                "id": "adolpho74",
+                "name": "Adolpho74"
+              }
+            },
+            "createdAt": "2026-10-05T21:26:33+00:00",
+            "lastMoveAt": "2026-10-11T17:15:05+00:00",
+            "moves": "e4 c5 Bc4 e6 Nf3 a6 d4 b5 Bd3 cxd4 Nxd4 Bb7 Bf4 d5 c4 bxc4 Be2 Nc6 Nxc6 Bxc6 g4 Bd6 Bxd6 Qxd6 Nc3 Nf6 exd5 exd5 Bf3 Qe6+ Kf1 O-O g5 Nd7 Ne2 Ne5 Nf4 Qf5 Ne2 Qxf3 g6 Qxh1+ Ng1 fxg6 Qe2 Qxh2 Rd1 Rae8 Ke1 Nd3+ Rxd3 Qxg1+ Kd2 Rxe2+ Kxe2 Qxf2+ Kd1 cxd3 b4 Qe2+ Kc1 Qc2#",
+            "opening": {
+              "name": "Sicilian Defense: Bowdler Attack",
+              "eco": "B20"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r4-l24",
+          "round": 4,
+          "white": "Anesio",
+          "black": "Alice",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/RXSEUV1h",
+          "start": "2026-10-04",
+          "end": "2026-10-10",
+          "sheetRow": 24,
+          "lichessGame": {
+            "id": "RXSEUV1h",
+            "url": "https://lichess.org/RXSEUV1h",
+            "status": "outoftime",
+            "winner": "white",
+            "players": {
+              "white": {
+                "id": "titoricci",
+                "name": "TitoRicci"
+              },
+              "black": {
+                "id": "akiqui",
+                "name": "Akiqui"
+              }
+            },
+            "createdAt": "2026-10-04T10:13:36+00:00",
+            "lastMoveAt": "2026-10-10T11:12:42+00:00",
+            "moves": "e4 e5 d3 d6 h3 f6 Qf3 Ne7 c3 g5 Qh5+ Ng6 Be2 Be6 h4 Be7 hxg5 fxg5 Nf3 Nc6 Bxg5 Bxg5 Nxg5 Qe7 Nxh7 Qxh7 Qxh7 Rxh7 Rxh7 O-O-O Rh6 Nf4 Bf1 Re8 g3 Bg4 gxf4 exf4 Bh3 Bxh3 Rxh3",
+            "opening": {
+              "name": "King's Pawn Game: Leonardis Variation",
+              "eco": "C20"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T00:10:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r4-l25",
+          "round": 4,
+          "white": "Ligia",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 1.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 25
+        },
+        {
+          "id": "ed2-r5-l27",
+          "round": 5,
+          "white": "Humberto",
+          "black": "Emanuel",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/iME37Z1o",
+          "start": "2026-10-16",
+          "end": "2026-10-18",
+          "sheetRow": 27,
+          "lichessGame": {
+            "id": "iME37Z1o",
+            "url": "https://lichess.org/iME37Z1o",
+            "status": "resign",
+            "winner": "white",
+            "players": {
+              "white": {
+                "id": "humberto_m",
+                "name": "Humberto_M"
+              },
+              "black": {
+                "id": "emanuelscorrea",
+                "name": "emanuelscorrea"
+              }
+            },
+            "createdAt": "2026-10-16T15:28:59+00:00",
+            "lastMoveAt": "2026-10-18T12:44:23+00:00",
+            "moves": "e4 d5 Nc3 Nf6 exd5 Nxd5 Bc4 Nxc3 bxc3 e5 Qe2 f6 d4 Qd6 Nf3 Nc6 Bb2 Be6 O-O-O O-O-O dxe5 Qe7 exf6 gxf6 Qxe6+ Kb8 Qxe7 Bxe7 Rxd8+ Rxd8 Rd1 Rg8 Bxg8",
+            "opening": {
+              "name": "Alekhine Defense: Scandinavian Variation",
+              "eco": "B02"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-18T14:00:16+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r5-l28",
+          "round": 5,
+          "white": "Anesio",
+          "black": "Wendell",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/7SPahMgp",
+          "start": "2026-10-14",
+          "end": "2026-10-15",
+          "sheetRow": 28,
+          "lichessGame": {
+            "id": "7SPahMgp",
+            "url": "https://lichess.org/7SPahMgp",
+            "status": "resign",
+            "winner": "white",
+            "players": {
+              "white": {
+                "id": "titoricci",
+                "name": "TitoRicci"
+              },
+              "black": {
+                "id": "emanlasker",
+                "name": "emanlasker"
+              }
+            },
+            "createdAt": "2026-10-14T18:18:32+00:00",
+            "lastMoveAt": "2026-10-16T01:35:04+00:00",
+            "moves": "e4 e5 d3 Nf6 h3 d5 Qf3 dxe4 dxe4 Be7 Be2 Nc6 c3 O-O Be3 a6 Nd2 b5 Qg3 g6 h4 Qd7 h5 Ng4 hxg6 fxg6 Bxg4 Qxg4 Qxg4 Bxg4 f3 Be6 Ne2 Na5 b3 Rfd8 Kf2 Rd3 Rh2 Rad8 Rah1 h5 g4 h4 g5 Rxe3 Rxh4 Kf7 Rh7+ Ke8 Rh8+ Kd7 Rxd8+ Bxd8 Kxe3 Bxg5+ f4 exf4+ Nxf4 Nc6 Rg1 Bxf4+ Kxf4 Ne7 Nf3 c5 Ne5+ Ke8 Nxg6 Nc6 Ne5 Ne7 Rh1 a5 Rh6 Bg8 Ra6 Nc8 Ra8 Be6 Rxa5 Nd6 Ra8+ Ke7 Nc6+ Kd7 e5 Nf7 Na7 c4 b4 Bd5 Rb8 Ke6 Nxb5 Nxe5 Re8+ Kd7 Rxe5 Kc6 Nd4+",
+            "opening": {
+              "name": "King's Pawn Game: Leonardis Variation",
+              "eco": "C20"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-16T05:50:12+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r5-l29",
+          "round": 5,
+          "white": "Alice",
+          "black": "Enrico",
+          "result": null,
+          "status": "Em andamento",
+          "byePoints": null,
+          "url": "https://lichess.org/gHDHQFpB",
+          "start": "2026-10-16",
+          "end": null,
+          "sheetRow": 29,
+          "lichessGame": {
+            "id": "gHDHQFpB",
+            "url": "https://lichess.org/gHDHQFpB",
+            "status": "started",
+            "winner": null,
+            "players": {
+              "white": {
+                "id": "akiqui",
+                "name": "Akiqui"
+              },
+              "black": {
+                "id": "xarnosqui",
+                "name": "Xarnosqui"
+              }
+            },
+            "createdAt": "2026-10-16T15:59:33+00:00",
+            "lastMoveAt": "2026-10-22T15:46:47+00:00",
+            "moves": "d4 d5 Nc3 Nf6 Nf3 e6 Bf4 c5 e3 a6 a4 Nc6 b3 Qa5 Qd2 cxd4 exd4 Bb4 O-O-O Bxc3 Qd3 Nb4 Qe3 Bd7 Kb1 Ne4 Qc1 b5 Qa3 bxa4 Re1 Nxc2 Kxc2 Bxe1 Nxe1",
+            "opening": {
+              "name": "Queen's Pawn Game: Chigorin Variation",
+              "eco": "A45"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 2,
+            "fetchedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessImport": {
+            "status": "ok",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "playing"
+          }
+        },
+        {
+          "id": "ed2-r5-l30",
+          "round": 5,
+          "white": "Ligia",
+          "black": "Gabriel",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": "https://lichess.org/IKy98VD3",
+          "start": "2026-10-14",
+          "end": "2026-10-19",
+          "sheetRow": 30,
+          "lichessGame": {
+            "id": "IKy98VD3",
+            "url": "https://lichess.org/IKy98VD3",
+            "status": "mate",
+            "winner": "white",
+            "players": {
+              "white": {
+                "id": "raducol",
+                "name": "Raducol"
+              },
+              "black": {
+                "id": "biel009",
+                "name": "Biel009"
+              }
+            },
+            "createdAt": "2026-10-14T22:41:51+00:00",
+            "lastMoveAt": "2026-10-19T23:54:57+00:00",
+            "moves": "d4 d5 Nc3 Nf6 e3 e5 Nf3 e4 Ne5 Ng4 Nxg4 Bxg4 Qxg4 h5 Qf4 Nd7 Qe5+ Nxe5 dxe5 c5 Bb5+ Ke7 O-O a6 Be2 d4 Nxe4 dxe3 Bxe3 Ke8 c4 b5 cxb5 axb5 Rad1 Qb8 Bg5 f6 exf6 Ra7 Nxc5 gxf6 Bxf6 b4 Bxh8 b3 axb3 Bxc5 Bxh5+ Kf8 Rfe1 Bb4 Re2 Qb5 Rd8+ Qe8 Rdxe8#",
+            "opening": {
+              "name": "Queen's Pawn Game: Chigorin Variation",
+              "eco": "A45"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-20T01:09:55+00:00"
+          },
+          "lichessImport": {
+            "status": "cache",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "manual",
+            "reason": "planilha_prevalece"
+          }
+        },
+        {
+          "id": "ed2-r5-l31",
+          "round": 5,
+          "white": "Jose Adolfo",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 1.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 31
+        },
+        {
+          "id": "ed2-r6-l33",
+          "round": 6,
+          "white": "Humberto",
+          "black": "Ligia",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": "https://lichess.org/HC7e1Za1",
+          "start": null,
+          "end": null,
+          "sheetRow": 33,
+          "lichessGame": {
+            "id": "HC7e1Za1",
+            "url": "https://lichess.org/HC7e1Za1",
+            "status": "started",
+            "winner": null,
+            "players": {
+              "white": {
+                "id": "humberto_m",
+                "name": "Humberto_M"
+              },
+              "black": {
+                "id": "raducol",
+                "name": "Raducol"
+              }
+            },
+            "createdAt": "2026-10-21T12:32:49+00:00",
+            "lastMoveAt": "2026-10-23T10:55:06+00:00",
+            "moves": "e4 e5 Nf3 d6 Bc4",
+            "opening": {
+              "name": "Philidor Defense",
+              "eco": "C41"
+            },
+            "perf": "correspondence",
+            "daysPerTurn": 1,
+            "fetchedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessImport": {
+            "status": "ok",
+            "checkedAt": "2026-10-23T12:47:58+00:00"
+          },
+          "lichessDecision": {
+            "status": "playing"
+          }
+        },
+        {
+          "id": "ed2-r6-l34",
+          "round": 6,
+          "white": "Wendell",
+          "black": "Alice",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 34
+        },
+        {
+          "id": "ed2-r6-l35",
+          "round": 6,
+          "white": "Enrico",
+          "black": "Jose Adolfo",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 35
+        },
+        {
+          "id": "ed2-r6-l36",
+          "round": 6,
+          "white": "Emanuel",
+          "black": "Gabriel",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 36
+        },
+        {
+          "id": "ed2-r6-l37",
+          "round": 6,
+          "white": "Anesio",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 0.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 37
+        },
+        {
+          "id": "ed2-r7-l39",
+          "round": 7,
+          "white": "Alice",
+          "black": "Humberto",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 39
+        },
+        {
+          "id": "ed2-r7-l40",
+          "round": 7,
+          "white": "Ligia",
+          "black": "Wendell",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 40
+        },
+        {
+          "id": "ed2-r7-l41",
+          "round": 7,
+          "white": "Anesio",
+          "black": "Jose Adolfo",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 41
+        },
+        {
+          "id": "ed2-r7-l42",
+          "round": 7,
+          "white": "Enrico",
+          "black": "Gabriel",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 42
+        },
+        {
+          "id": "ed2-r7-l43",
+          "round": 7,
+          "white": "Emanuel",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 0.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 43
+        },
+        {
+          "id": "ed2-r8-l45",
+          "round": 8,
+          "white": "Gabriel",
+          "black": "Humberto",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 45
+        },
+        {
+          "id": "ed2-r8-l46",
+          "round": 8,
+          "white": "Jose Adolfo",
+          "black": "Ligia",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 46
+        },
+        {
+          "id": "ed2-r8-l47",
+          "round": 8,
+          "white": "Anesio",
+          "black": "Enrico",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 47
+        },
+        {
+          "id": "ed2-r8-l48",
+          "round": 8,
+          "white": "Emanuel",
+          "black": "Alice",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 48
+        },
+        {
+          "id": "ed2-r8-l49",
+          "round": 8,
+          "white": "Wendell",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 0.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 49
+        },
+        {
+          "id": "ed2-r9-l51",
+          "round": 9,
+          "white": "Gabriel",
+          "black": "Wendell",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 51
+        },
+        {
+          "id": "ed2-r9-l52",
+          "round": 9,
+          "white": "Jose Adolfo",
+          "black": "Alice",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 52
+        },
+        {
+          "id": "ed2-r9-l53",
+          "round": 9,
+          "white": "Enrico",
+          "black": "Ligia",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 53
+        },
+        {
+          "id": "ed2-r9-l54",
+          "round": 9,
+          "white": "Emanuel",
+          "black": "Anesio",
+          "result": null,
+          "status": "Jogador em outra partida",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 54
+        },
+        {
+          "id": "ed2-r9-l55",
+          "round": 9,
+          "white": "Humberto",
+          "black": null,
+          "result": "bye",
+          "status": "Bye",
+          "byePoints": 0.0,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 55
+        }
+      ]
+    },
+    {
+      "id": "anterior",
+      "title": "Campeonato Anterior",
+      "subtitle": "Edição encerrada",
+      "sheet": "1",
+      "currentRound": 5,
+      "active": false,
+      "matches": [
+        {
+          "id": "ed1-r1-l2",
+          "round": 1,
+          "white": "Humberto_M",
+          "black": "emanlasker",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 2
+        },
+        {
+          "id": "ed1-r1-l3",
+          "round": 1,
+          "white": "Xarnosqui",
+          "black": "Adolpho74",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 3
+        },
+        {
+          "id": "ed1-r1-l4",
+          "round": 1,
+          "white": "Raducol",
+          "black": "Akiqui",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 4
+        },
+        {
+          "id": "ed1-r2-l7",
+          "round": 2,
+          "white": "emanlasker",
+          "black": "Xarnosqui",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 7
+        },
+        {
+          "id": "ed1-r2-l8",
+          "round": 2,
+          "white": "Akiqui",
+          "black": "Humberto_M",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 8
+        },
+        {
+          "id": "ed1-r2-l9",
+          "round": 2,
+          "white": "Adolpho74",
+          "black": "Raducol",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 9
+        },
+        {
+          "id": "ed1-r3-l11",
+          "round": 3,
+          "white": "Xarnosqui",
+          "black": "Akiqui",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 11
+        },
+        {
+          "id": "ed1-r3-l12",
+          "round": 3,
+          "white": "Adolpho74",
+          "black": "emanlasker",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 12
+        },
+        {
+          "id": "ed1-r3-l13",
+          "round": 3,
+          "white": "Raducol",
+          "black": "Humberto_M",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 13
+        },
+        {
+          "id": "ed1-r4-l15",
+          "round": 4,
+          "white": "Akiqui",
+          "black": "Adolpho74",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 15
+        },
+        {
+          "id": "ed1-r4-l16",
+          "round": 4,
+          "white": "Humberto_M",
+          "black": "Xarnosqui",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 16
+        },
+        {
+          "id": "ed1-r4-l17",
+          "round": 4,
+          "white": "emanlasker",
+          "black": "Raducol",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 17
+        },
+        {
+          "id": "ed1-r5-l19",
+          "round": 5,
+          "white": "Adolpho74",
+          "black": "Humberto_M",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 19
+        },
+        {
+          "id": "ed1-r5-l20",
+          "round": 5,
+          "white": "emanlasker",
+          "black": "Akiqui",
+          "result": "1-0",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 20
+        },
+        {
+          "id": "ed1-r5-l21",
+          "round": 5,
+          "white": "Raducol",
+          "black": "Xarnosqui",
+          "result": "0-1",
+          "status": "Finalizado",
+          "byePoints": null,
+          "url": null,
+          "start": null,
+          "end": null,
+          "sheetRow": 21
+        }
+      ]
+    }
+  ],
+  "players": [
+    {
+      "name": "Alice",
+      "lichess": "Akiqui",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 1205,
+        "provisional": true,
+        "games": 8
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "Akiqui",
+        "id": "akiqui",
+        "url": "https://lichess.org/@/Akiqui",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    },
+    {
+      "name": "Anesio",
+      "lichess": "TitoRicci",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 1760,
+        "provisional": true,
+        "games": 5
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "TitoRicci",
+        "id": "titoricci",
+        "url": "https://lichess.org/@/TitoRicci",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    },
+    {
+      "name": "Emanuel",
+      "lichess": "emanuelscorrea",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 1300,
+        "provisional": true,
+        "games": 4
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "emanuelscorrea",
+        "id": "emanuelscorrea",
+        "url": "https://lichess.org/@/emanuelscorrea",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    },
+    {
+      "name": "Enrico",
+      "lichess": "Xarnosqui",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 1836,
+        "provisional": true,
+        "games": 7
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "Xarnosqui",
+        "id": "xarnosqui",
+        "url": "https://lichess.org/@/Xarnosqui",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    },
+    {
+      "name": "Gabriel",
+      "lichess": "Biel009",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 760,
+        "provisional": true,
+        "games": 5
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "Biel009",
+        "id": "biel009",
+        "url": "https://lichess.org/@/Biel009",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    },
+    {
+      "name": "Humberto",
+      "lichess": "Humberto_M",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 1943,
+        "provisional": true,
+        "games": 9
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "Humberto_M",
+        "id": "humberto_m",
+        "url": "https://lichess.org/@/Humberto_M",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    },
+    {
+      "name": "Jose Adolfo",
+      "lichess": "Adolpho74",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 1586,
+        "provisional": true,
+        "games": 10
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "Adolpho74",
+        "id": "adolpho74",
+        "url": "https://lichess.org/@/Adolpho74",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    },
+    {
+      "name": "Ligia",
+      "lichess": "Raducol",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 1084,
+        "provisional": true,
+        "games": 10
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "Raducol",
+        "id": "raducol",
+        "url": "https://lichess.org/@/Raducol",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    },
+    {
+      "name": "Wendell",
+      "lichess": "emanlasker",
+      "lichessCorrespondence": {
+        "status": "disponivel",
+        "checkedAt": "2026-10-23T12:47:54+00:00",
+        "rating": 1609,
+        "provisional": true,
+        "games": 10
+      },
+      "lichessValidation": {
+        "status": "valido",
+        "username": "emanlasker",
+        "id": "emanlasker",
+        "url": "https://lichess.org/@/emanlasker",
+        "checkedAt": "2026-10-23T12:47:54+00:00"
+      }
+    }
+  ],
+  "unlinkedSuggestions": {
+    "status": "parcial",
+    "checkedAt": "2026-10-23T12:47:59+00:00",
+    "checkedPlayers": 4,
+    "eligibleMatches": 16,
+    "candidates": [],
+    "warnings": [
+      "Busca por amostragem: outros confrontos serão consultados em execuções futuras."
+    ],
+    "queries": 4
+  }
+}

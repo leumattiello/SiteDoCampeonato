@@ -1,4 +1,6 @@
 import unittest
+from contextlib import redirect_stdout
+import io
 from datetime import datetime, timezone
 from scripts.suggest_unlinked_games import candidate_matches, verified_id, result_of
 
@@ -37,6 +39,32 @@ class SuggestionsTest(unittest.TestCase):
     def test_results_conflict_rejected(self):
         p=payload();p["tournaments"][0]["matches"][0]["result"]="1-0"
         self.assertEqual(candidate_matches(p,lookup=lambda n,s:[game()],now=NOW)["candidates"],[])
+    def test_pair_queries_both_profiles_and_exact_opponents(self):
+        calls=[]
+        def lookup(nick,since,vs=None):
+            calls.append((nick,vs))
+            return [game()] if nick=='bia123' else []
+        x=candidate_matches(payload(),lookup=lookup,now=NOW)
+        self.assertIn(('ana123','bia123'),calls)
+        self.assertIn(('bia123','ana123'),calls)
+        self.assertEqual(len(x['candidates']),1)
+    def test_hourly_budget_and_rotation_limits_requests(self):
+        p = payload()
+        p["tournaments"][0]["matches"]=[{"id":str(i),"round":i+1,"white":"Ana","black":f"P{i}",
+            "status":"Jogador em outra partida","url":None,"result":None,"start":"2026-10-10"} for i in range(6)]
+        p["players"] += [{"name":f"P{i}","lichess":f"user{i}","lichessValidation":{"status":"valido","id":f"user{i}"}} for i in range(6)]
+        calls=[]
+        def lookup(nick,since,vs=None):
+            calls.append((nick,vs))
+            return []
+        with redirect_stdout(io.StringIO()):
+            out=candidate_matches(p,lookup=lookup,now=NOW)
+            later=candidate_matches(p,lookup=lookup,now=NOW.replace(hour=NOW.hour+1))
+        self.assertLessEqual(out["queries"],4)
+        self.assertEqual(out["status"],"parcial")
+        self.assertEqual(later["status"],"parcial")
+        self.assertNotEqual(calls[:4],calls[4:8])
+
     def test_verified_id(self):
         self.assertEqual(verified_id(payload()["players"][0]),"ana123")
         self.assertIsNone(verified_id({"name":"x","lichess":"abc","lichessValidation":{"status":"valido","id":"wrong"}}))

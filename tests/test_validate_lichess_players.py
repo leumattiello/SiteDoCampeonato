@@ -52,6 +52,34 @@ class ValidatePlayersTest(unittest.TestCase):
         self.assertNotIn("Historico", result)
 
 
+    def test_profile_cache_skips_unchanged_nick_for_24_hours(self):
+        x = fixture()
+        cache = {}
+        calls = []
+        def lookup(nick):
+            calls.append(nick)
+            return {"id":nick.lower(),"username":nick,"perfs":{"correspondence":{"rating":1400}}}
+        with redirect_stdout(io.StringIO()):
+            verify_players(x, lookup=lookup, cache=cache, checked_at="2026-10-20T10:00:00Z", pause=lambda _ :None)
+            verify_players(x, lookup=lookup, cache=cache, checked_at="2026-10-20T11:00:00Z", pause=lambda _ :None)
+        self.assertEqual(len(calls),2)
+        self.assertEqual(x["players"][0]["lichessValidation"]["status"],"valido")
+        with redirect_stdout(io.StringIO()):
+            verify_players(x, lookup=lookup, cache=cache, checked_at="2026-10-21T11:01:00Z", pause=lambda _:None)
+        self.assertEqual(len(calls),4)
+
+    def test_cache_not_reused_after_nick_changes(self):
+        x = fixture()
+        cache = {}
+        calls = []
+        with redirect_stdout(io.StringIO()):
+            verify_players(x, cache=cache, lookup=lambda nick:(calls.append(nick) or {"id":nick.lower(),"username":nick}),
+                           checked_at="2026-10-20T10:00:00Z", pause=lambda _:None)
+            x["players"][0]["lichess"]="NewNick"
+            verify_players(x, cache=cache, lookup=lambda nick:(calls.append(nick) or {"id":nick.lower(),"username":nick}),
+                           checked_at="2026-10-20T11:00:00Z", pause=lambda _:None)
+        self.assertEqual(calls,["Akiqui","TitoRicci","NewNick"])
+
     def test_correspondence_only_and_provisional(self):
         obj = fixture()
         def lookup(nick):

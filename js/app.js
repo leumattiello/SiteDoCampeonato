@@ -1,3 +1,4 @@
+import {LichessAuth} from './lichess-auth.js';
 import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches,eligibleToStart,alternativeStartPlayers} from './model.js';
 import {activeBoardInfo} from './live.js';
 import {contextualHelp} from './contextual-help.js';
@@ -6,6 +7,7 @@ import {openingNamePt} from './opening-pt.js';
 import {gloryAwards,featuredGloryAwards} from './glory.js';
 import {REGION_MAPS} from './regions.js';
 import {editionChampion,editionRivalries,interEditionRivalries} from './history.js';
+const lichessAuth = new LichessAuth();
 const dataUrl='./data/campeonatos.json';
 const storageKey='reinos-xadrez-jogador';
 let store=null, current=null, archive=null, selected='', activePage='inicio', roundSelected=4, device='celular';
@@ -303,7 +305,38 @@ function drawSuggestions(){
     }).join('')+'</div>':'<div class="empty-message">Nenhuma sugestão disponível nesta consulta. A ausência de sugestões não significa que não existam jogos.</div>');
 }
 function renderAll(){drawStats();drawMyBattle();drawLeaders();drawRecent();drawOngoing();drawGlory();drawStandings();drawRounds();drawTutorials();drawHistory();drawSuggestions();}
+function refreshLichessAuth(status='') {
+  const login=byId('lichess-login'),logout=byId('lichess-logout'),account=byId('lichess-account'),message=byId('lichess-auth-message');
+  if (!login || !logout || !account || !message) return;
+  login.hidden=lichessAuth.connected; logout.hidden=!lichessAuth.connected;
+  account.hidden=!lichessAuth.connected;
+  account.textContent=lichessAuth.connected?'Lichess: '+lichessAuth.account.username:'';
+  login.disabled=!lichessAuth.available;
+  const messages={
+    unavailable:'Login disponível apenas no site oficial ou em localhost com criptografia.',
+    'storage-unavailable':'Seu navegador bloqueou o armazenamento temporário necessário para o login.',
+    'invalid-state':'Não foi possível validar este retorno de login. Tente novamente.',
+    cancelled:'Login cancelado no Lichess.',error:'Falha ao conectar ao Lichess. Tente novamente.',
+    'revoke-failed':'Sessão encerrada localmente, mas não foi possível revogar no Lichess; revogue nas configurações da conta.',
+    disconnected:'Você saiu do Lichess.',connected:'Conectado ao Lichess. Nenhum desafio foi criado.',
+    'navigation-failed':'Não foi possível abrir a autorização do Lichess.'
+  };
+  message.textContent=messages[status]||(!lichessAuth.available?'Login indisponível nesta prévia.':'Conexão opcional; o site funciona sem conta.');
+}
 async function init(){
+  refreshLichessAuth();
+  byId('lichess-login')?.addEventListener('click',async()=>{
+    byId('lichess-login').disabled=true;
+    const result=await lichessAuth.beginLogin();
+    refreshLichessAuth(result.status);
+  });
+  byId('lichess-logout')?.addEventListener('click',async()=>{
+    const button=byId('lichess-logout');button.disabled=true;
+    const result=await lichessAuth.logout();
+    refreshLichessAuth(result.status);button.disabled=false;
+  });
+  const oauthResult=await lichessAuth.completeRedirect();
+  if(oauthResult.status!=='none')refreshLichessAuth(oauthResult.status);
   document.addEventListener('click',e=>{
     const replay=e.target.closest('[data-replay-id]');if(replay){e.preventDefault();openReplay(replay.dataset.replayId);return;}
     const watching=e.target.closest('[data-watch-id]');if(watching){e.preventDefault();openWatch(watching.dataset.watchId);return;}

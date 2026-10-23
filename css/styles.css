@@ -163,3 +163,12 @@
 .rules-footnote{border-top:1px solid #d9c9ad;padding-top:14px;margin-top:16px!important}
 @media(max-width:880px){.rules-conduct{grid-template-columns:1fr}.rules-grid{gap:12px}}
 @media(max-width:740px){.primary-nav{grid-template-columns:repeat(4,minmax(0,1fr))}.nav-link{min-height:48px;font-size:10px;white-space:normal}.rules-grid{grid-template-columns:1fr}.rules-card{padding:17px;scroll-margin-top:155px}.rules-card-wide{grid-column:auto}.rules-index a{flex:1 1 100px;text-align:center}.rules-intro{font-size:13px;padding:13px}.rules-score strong{font-size:21px}}
+
+/* #13 — conexão Lichess opcional; não altera fluxo anônimo */
+.lichess-auth{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;max-width:300px}
+.lichess-auth-button{border:1px solid #b99b65;background:#eee0c4;color:#42341d;border-radius:4px;padding:6px 9px;font-size:11px;font-weight:700}
+.lichess-auth-button:hover{background:#e4ce9f}.lichess-auth-button:disabled{opacity:.5;cursor:not-allowed}
+.lichess-auth-account{font-size:11px;font-weight:700;color:#efe0b9;overflow-wrap:anywhere}
+.lichess-auth-message{width:100%;font-size:10px;line-height:1.3;color:#a89577}
+.lichess-auth [hidden]{display:none!important}
+@media(max-width:740px){.lichess-auth{max-width:145px}.lichess-auth-button{padding:5px;font-size:10px}.lichess-auth-message{font-size:9px}}

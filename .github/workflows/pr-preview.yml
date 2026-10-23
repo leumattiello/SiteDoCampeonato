@@ -32,6 +32,13 @@ jobs:
           node --check js/app.js
       - name: Atualizar dados publicos da planilha
         run: python scripts/sync_google_sheets.py --strict
+      - name: Restaurar cache de perfis Lichess (24 horas)
+        uses: actions/cache@v4
+        with:
+          path: .cache/lichess-profiles.json
+          key: lichess-profile-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            lichess-profile-v1-${{ runner.os }}-
       - name: Consultar perfis e rating de correspondencia
         run: python scripts/validate_lichess_players.py
       # Sem segredo LICHESS_API_TOKEN em codigo de PR.

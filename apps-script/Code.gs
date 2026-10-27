@@ -863,7 +863,7 @@ function propostasElegibilidade_(rows,referencia,finaisVerificados) {
     if(!final && (temLink||parcial||estado==='em andamento'||estado==='finalizado')){
       ocupados.add(white);ocupados.add(black);
     }
-    confrontos.push({row:i+1,white,black,round,estado,final,temLink,parcial,raw:r});
+    confrontos.push({row:i+1,white,black,round:rodada,estado,final,temLink,parcial,raw:r});
   }
   const propostas=[];
   for(const m of confrontos) {

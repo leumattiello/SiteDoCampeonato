@@ -21,6 +21,7 @@ const REINOS_CONFIG = Object.freeze({
   ABA_AUDITORIA: '_AuditoriaLichess',
   ABA_AUDITORIA_DATAS: '_AuditoriaDatasLichess',
   ABA_AUDITORIA_VINCULOS: '_AuditoriaVinculosLichess',
+  ABA_AUDITORIA_STATUS: '_AuditoriaStatusLichess',
   ID_PLANILHA_ORIGINAL: '1YlGQwfYdT_J633frIN_wPiW3ExYqjC1gcum2xi1KwGc',
   MAX_CONSULTAS: 80,
   MAX_CONSULTAS_DESCOBERTA: 8,
@@ -94,7 +95,12 @@ function executarSincronizacao_(solicitouEscrita) {
     }
     const resumo = {modo: solicitouEscrita ? 'GRAVACAO' : 'SIMULACAO', planilha: env.original ? 'ORIGINAL' : 'COPIA',
       candidatos: 0, aplicados: 0, candidatosDatas: 0, aplicadosDatas: 0, divergenciasDatas: 0,
-      divergencias: 0, ignorados: 0, consultas: 0, erros: 0};
+      divergencias: 0, ignorados: 0, consultas: 0, erros: 0,
+      candidatosStatus: 0, aplicadosStatus: 0, conflitosStatus: 0,
+      aguardandoCandidatos: 0, aguardandoAplicados: 0, aguardandoRevertidos: 0,
+      aguardandoConflitos: 0, elegibilidadeIgnorada: null};
+    const finaisVerificados = {};
+    let consultaInterrompida = false;
     const consultados = {};
     for (let index = 0; index < grid.length; index++) {
       const row = grid[index];
@@ -123,6 +129,7 @@ function executarSincronizacao_(solicitouEscrita) {
       if (!(gameId in consultados)) {
         if (resumo.consultas >= REINOS_CONFIG.MAX_CONSULTAS) {
           console.log('Reinos: limite de consultas atingido; restante ignorado nesta execução.');
+          consultaInterrompida = true;
           break;
         }
         resumo.consultas++;
@@ -133,6 +140,7 @@ function executarSincronizacao_(solicitouEscrita) {
       if (lookup.httpStatus === 429) {
         resumo.erros++;
         console.log('Reinos: HTTP 429; consultas suspensas para respeitar limite do Lichess.');
+        consultaInterrompida = true;
         break;
       }
       if (lookup.error) {
@@ -155,6 +163,24 @@ function executarSincronizacao_(solicitouEscrita) {
         continue;
       }
       const result = placarLichess_(game);
+      const statusProposto = statusLichess_(game, result);
+      // Não rebaixar finais confirmados nem sobrescrever um placar manual divergente.
+      const conflitoResultado = ( !celulaVazia_(expected[1]) || !celulaVazia_(expected[2]) ) &&
+        (result === null || !valoresIguais_(expected[1], result[0]) ||
+         !valoresIguais_(expected[2], result[1]));
+      // Somente para projetar simulações: as partidas finalizadas e validadas
+      // liberam os jogadores mesmo que o resultado ainda não tenha sido gravado.
+      if (result !== null && !conflitoResultado) finaisVerificados[rowNumber] = true;
+      const podeMudarStatus = statusProposto &&
+        !(statusProposto === 'Em andamento' && normalizarNome_(expected[4]).toLowerCase() === 'finalizado') &&
+        (statusProposto === 'Finalizado'
+          ? !conflitoResultado
+          : celulaVazia_(expected[1]) && celulaVazia_(expected[2])) &&
+        expected[4] !== statusProposto;
+      if (statusProposto && expected[4] !== statusProposto && !podeMudarStatus) {
+        resumo.conflitosStatus++;
+        console.log('Reinos: linha '+rowNumber+': status divergente, preservado para revisão.');
+      }
       const datas = datasLichess_(game, result !== null);
       const faltamDatas = {
         inicio: celulaVazia_(expected[6]) && !!datas.inicio,
@@ -173,7 +199,7 @@ function executarSincronizacao_(solicitouEscrita) {
           console.log(`Reinos: linha ${rowNumber}: ${label} já preenchida, difere da referência Lichess; preservada.`);
         }
       }
-      if (!dadosDatas && !faltaPlacar) { resumo.ignorados++; continue; }
+      if (!dadosDatas && !faltaPlacar && !podeMudarStatus) { resumo.ignorados++; continue; }
 
       // #4 primeiro: valida A:H e preenche somente as datas faltantes.
       if (dadosDatas) {
@@ -191,6 +217,18 @@ function executarSincronizacao_(solicitouEscrita) {
         }
       }
 
+      // #18: status é sincronizado com segurança, independentemente das datas.
+      // Quando faltam B/C, a rotina de placar final abaixo mantém sua gravação.
+      if (podeMudarStatus && !(faltaPlacar && statusProposto === 'Finalizado')) {
+        resumo.candidatosStatus++;
+        console.log('Reinos: linha '+rowNumber+': E='+statusProposto+
+          (solicitouEscrita?'':' [SIMULAÇÃO]'));
+        if (solicitouEscrita) {
+          if (gravarStatusSeInalterado_(jogosSheet,rowNumber,expected,statusProposto,gameId,env.spreadsheet)) {
+            resumo.aplicadosStatus++;
+          } else resumo.conflitosStatus++;
+        }
+      }
       // #3 em separado: nenhuma mudança nas regras de placar/Bye.
       if (faltaPlacar) {
         resumo.candidatos++;
@@ -205,6 +243,18 @@ function executarSincronizacao_(solicitouEscrita) {
         }
       }
     }
+    // Executar SOMENTE após aferir resultados e estados Lichess. O novo passe
+    // não faz nenhuma chamada HTTP: trabalha sobre a grade revalidada.
+    if (!consultaInterrompida) {
+      const rodadaRef = rodadaReferencia_(env.spreadsheet);
+      if (rodadaRef === null) {
+        resumo.elegibilidadeIgnorada = 'Config.rodada_atual ausente ou inválida';
+      } else {
+        const atual = solicitouEscrita ? jogosSheet.getDataRange().getValues() : grid;
+        sincronizarElegibilidade_(jogosSheet,atual,rodadaRef,solicitouEscrita,
+          env.spreadsheet,resumo,solicitouEscrita ? {} : finaisVerificados);
+      }
+    } else resumo.elegibilidadeIgnorada = 'Consulta Lichess interrompida; recalcular na próxima execução';
     console.log('Reinos: resumo ' + JSON.stringify(resumo));
     return resumo;
   } finally {
@@ -729,4 +779,145 @@ function descobrirPartidas_(escrever, filtro) {
     console.log('Reinos: descoberta '+JSON.stringify(resumo));
     return resumo;
   }finally{if(lock)lock.releaseLock();}
+}
+
+/** #18: somente estados publicamente comprovados; não inferir estados
+ * de desafio, abortos ou falta de resultados. */
+function statusLichess_(game, result) {
+  if (result !== null) return 'Finalizado';
+  if (String(game.status || '').toLowerCase() === 'started') return 'Em andamento';
+  return null;
+}
+/** Atualiza apenas E, sem sobrescrever B/C, F ou células alteradas.
+ * Edições manuais simultâneas ainda não têm transação compare-and-swap;
+ * o lock cobre somente duas execuções deste script.
+ */
+function gravarStatusSeInalterado_(sheet,rowNumber,expected,status,gameId,spreadsheet) {
+  if (status !== 'Em andamento' && status !== 'Finalizado') return false;
+  const before=sheet.getRange(rowNumber,1,1,8).getValues()[0];
+  if (!expected.every((v,i)=>valorSnapshotIgual_(v,before[i]) ||
+      ((i===6||i===7) && !celulaVazia_(before[i]) && celulaVazia_(v))) ||
+      extrairIdPublico_(before[5])!==gameId ||
+      normalizarNome_(before[4]).toLowerCase()==='bye') return false;
+  // Status ativo não substitui placares, inclusive um zero isolado.
+  if (status==='Em andamento' && (!celulaVazia_(before[1]) || !celulaVazia_(before[2]))) return false;
+  if (before[4]===status || (status==='Em andamento' && normalizarNome_(before[4]).toLowerCase()==='finalizado')) return false;
+  sheet.getRange(rowNumber,5).setValue(status);
+  SpreadsheetApp.flush();
+  if(sheet.getRange(rowNumber,5).getValue()!==status)
+    throw new Error('Falha ao confirmar status na linha '+rowNumber);
+  try {
+    let audit=spreadsheet.getSheetByName(REINOS_CONFIG.ABA_AUDITORIA_STATUS);
+    if(!audit){
+      audit=spreadsheet.insertSheet(REINOS_CONFIG.ABA_AUDITORIA_STATUS);
+      audit.appendRow(['UTC','Aba','Linha','ID público','Brancas','Pretas','Status anterior','Status novo']);
+    }
+    audit.appendRow([new Date().toISOString(),REINOS_CONFIG.ABA_CONFRONTOS,rowNumber,gameId,
+      expected[0],expected[3],expected[4],status]);
+  } catch(e) {
+    console.error('Reinos: status gravado, mas auditoria falhou na linha '+rowNumber);
+  }
+  return true;
+}
+
+/** #18: a rodada de referência fica em Config!B (chave rodada_atual).
+ * A falta de configuração desliga apenas a automação de elegibilidade. */
+function rodadaReferencia_(spreadsheet) {
+  const config=spreadsheet.getSheetByName('Config');
+  if(!config)return null;
+  const dados=config.getDataRange().getValues();
+  for(const row of dados) {
+    if(normalizarNome_(row[0]) !== 'rodada_atual')continue;
+    const value=String(row[1]===undefined?'':row[1]).trim();
+    if(!/^\d+$/.test(value))return null;
+    const rodada=Number(value);
+    return Number.isSafeInteger(rodada)&&rodada>=1&&rodada<=1000?rodada:null;
+  }
+  return null;
+}
+/** Projeta a disponibilidade conforme a regra da página Rodadas.
+ * Não considera "aguardando" como partida ativa. Dois confrontos
+ * alternativos podem estar aptos; iniciar um torna o outro ocupado.
+ */
+function propostasElegibilidade_(rows,referencia,finaisVerificados) {
+  const ocupados=new Set();
+  const confrontos=[];
+  let rodada=0;
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i]||[];
+    const white=normalizarNome_(r[0]),black=normalizarNome_(r[3]);
+    const round=/^rodada\s+(\d+)$/i.exec(nomeNormalizado_(r[0]));
+    if(round) {
+      rodada=Number(round[1]);continue;
+    }
+    if(!white||!black||white===black||!Number.isInteger(rodada)||rodada<1)continue;
+    if(normalizarNome_(r[4])==='bye')continue;
+    const completos=!celulaVazia_(r[1])&&!celulaVazia_(r[2]);
+    const final=!!finaisVerificados[i+1]||completos;
+    const temLink=!celulaVazia_(r[5]);
+    const parcial=!celulaVazia_(r[1])||!celulaVazia_(r[2]);
+    const estado=normalizarNome_(r[4]);
+    // O link e/ou estado em andamento significam ocupação até que
+    // resultado conferido prove a liberação. Finalizado sem placar é
+    // inconclusivo e também bloqueia um segundo jogo.
+    if(!final && (temLink||parcial||estado==='em andamento'||estado==='finalizado')){
+      ocupados.add(white);ocupados.add(black);
+    }
+    confrontos.push({row:i+1,white,black,round:rodada,estado,final,temLink,parcial,raw:r});
+  }
+  const propostas=[];
+  for(const m of confrontos) {
+    if(!['jogador em outra partida','aguardando inicio'].includes(m.estado))continue;
+    if(m.final||m.temLink||m.parcial)continue;
+    const apto=m.round<=referencia+1 &&
+      !ocupados.has(m.white)&&!ocupados.has(m.black);
+    const novo=apto?'Aguardando início':'Jogador em outra partida';
+    if(nomeNormalizado_(m.raw[4])!==novo) propostas.push({row:m.row,original:m.raw,novo});
+  }
+  return propostas;
+}
+/** Escreve SOMENTE E para um confronto livre confirmado, sob lock.
+ * Revalida A:H, Config, link, pontuação, Bye e rodada.
+ */
+function gravarElegibilidadeSeInalterada_(sheet,proposal,referencia,spreadsheet) {
+  if(rodadaReferencia_(spreadsheet)!==referencia)return false;
+  const r=sheet.getRange(proposal.row,1,1,8).getValues()[0];
+  const expected=Array.from({length:8},(_,i)=>proposal.original[i]===undefined?'':proposal.original[i]);
+  if(!expected.every((v,i)=>valorSnapshotIgual_(v,r[i])) ||
+    !celulaVazia_(r[5])||!celulaVazia_(r[1])||!celulaVazia_(r[2])||
+    !['jogador em outra partida','aguardando inicio'].includes(normalizarNome_(r[4])) ||
+    !['Aguardando início','Jogador em outra partida'].includes(proposal.novo))return false;
+  sheet.getRange(proposal.row,5).setValue(proposal.novo);
+  SpreadsheetApp.flush();
+  if(sheet.getRange(proposal.row,5).getValue()!==proposal.novo)
+    throw new Error('Linha '+proposal.row+': gravação de elegibilidade não confirmada');
+  try{
+    let audit=spreadsheet.getSheetByName(REINOS_CONFIG.ABA_AUDITORIA_STATUS);
+    if(!audit){
+      audit=spreadsheet.insertSheet(REINOS_CONFIG.ABA_AUDITORIA_STATUS);
+      audit.appendRow(['UTC','Aba','Linha','ID público','Brancas','Pretas','Status anterior','Status novo']);
+    }
+    audit.appendRow([new Date().toISOString(),REINOS_CONFIG.ABA_CONFRONTOS,proposal.row,'',
+      expected[0],expected[3],expected[4],proposal.novo]);
+  }catch(error){console.error('Reinos: elegibilidade gravada, mas auditoria falhou na linha '+proposal.row);}
+  return true;
+}
+function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,resumo,finaisVerificados) {
+  const propostas=propostasElegibilidade_(rows,referencia,finaisVerificados);
+  for(const proposta of propostas){
+    resumo.aguardandoCandidatos++;
+    console.log('Reinos: linha '+proposta.row+': E='+proposta.novo+
+      (escrever?'':' [SIMULAÇÃO]'));
+    if(!escrever)continue;
+    // Antes de qualquer escrita, refazer a elegibilidade contra a grade
+    // atual (inclusive linhas que o organizador tenha modificado).
+    const agora=sheet.getDataRange().getValues();
+    const ainda=propostasElegibilidade_(agora,referencia,{})
+      .some(p=>p.row===proposta.row&&p.novo===proposta.novo);
+    if(!ainda||!gravarElegibilidadeSeInalterada_(sheet,proposta,referencia,spreadsheet)){
+      resumo.aguardandoConflitos++;continue;
+    }
+    if(proposta.novo==='Aguardando início')resumo.aguardandoAplicados++;
+    else resumo.aguardandoRevertidos++;
+  }
 }

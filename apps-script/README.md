@@ -49,14 +49,3 @@ Após **consultar os jogos vinculados, processar resultados, status e datas**, a
 - Em HTTP 429 ou interrupção da varredura, não atualiza elegibilidade nessa execução. Se a configuração de rodada estiver ausente/incorreta, não altera E.
 
 **Homologação:** usar primeiro `simularResultados()` numa cópia, conferir propostas `aguardandoCandidatos`; depois `aplicarResultados()` na cópia autorizada, conferir E e auditoria, repetir para idempotência e simular novo jogo em andamento para ver reversão. Merge GitHub não instala `Code.gs` automaticamente. O site usa seu próprio cálculo; a planilha passa a espelhar essa regra após o acionador.
-
-## Melhoria #18: totais por jogador — J/K/L
-
-Na aba **2**, a tabela J1:L10 já existe, com esta ordem: **J=Jogador (nick Lichess), K=Pontos, L=Partidas**. A nova sincronização preserva os nicks e sua ordem e preenche **somente K/L**, depois de conferir os resultados no Lichess e atualizar B/C, E, G/H.
-
-- **Pontos (K):** somatório de B/C de resultados completos e válidos, mais os pontos de Bye registrados em B (inclusive 0 ou 0,5); Bye sem pontuação vale 0.
-- **Partidas (L):** número de confrontos com placar completo (1–0, 0–1, 0,5–0,5); não inclui partidas em andamento, futuras ou folgas.
-- A rotina não utiliza APIs adicionais. A composição da tabela é calculada novamente, conferida com os nomes na aba Jogadores e revalidada antes da gravação, com idempotência e auditoria `_AuditoriaResumoLichess`.
-- Falhas de consulta que interrompam o lote, resultados incompletos/inconsistentes, nicks ausentes/duplicados, cabeçalhos inesperados ou fórmulas presentes em K/L impedem a atualização em vez de produzir um quadro incorreto.
-- **Simulação:** `simularResultados()` mostra quantos totais seriam atualizados, sem alterar células. **Aplicação:** `aplicarResultados()` exige os mesmos bloqueios de segurança anteriores.
-- Homologar primeiro em cópia. O merge no GitHub não altera o Apps Script já instalado na planilha original.

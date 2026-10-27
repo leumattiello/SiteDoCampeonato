@@ -22,7 +22,6 @@ const REINOS_CONFIG = Object.freeze({
   ABA_AUDITORIA_DATAS: '_AuditoriaDatasLichess',
   ABA_AUDITORIA_VINCULOS: '_AuditoriaVinculosLichess',
   ABA_AUDITORIA_STATUS: '_AuditoriaStatusLichess',
-  ABA_AUDITORIA_RESUMO: '_AuditoriaResumoLichess',
   ID_PLANILHA_ORIGINAL: '1YlGQwfYdT_J633frIN_wPiW3ExYqjC1gcum2xi1KwGc',
   MAX_CONSULTAS: 80,
   MAX_CONSULTAS_DESCOBERTA: 8,
@@ -99,8 +98,7 @@ function executarSincronizacao_(solicitouEscrita) {
       divergencias: 0, ignorados: 0, consultas: 0, erros: 0,
       candidatosStatus: 0, aplicadosStatus: 0, conflitosStatus: 0,
       aguardandoCandidatos: 0, aguardandoAplicados: 0, aguardandoRevertidos: 0,
-      aguardandoConflitos: 0, elegibilidadeIgnorada: null,
-      resumoCandidatos: 0, resumoAplicados: 0, resumoConflitos: 0, resumoIgnorado: null};
+      aguardandoConflitos: 0, elegibilidadeIgnorada: null};
     const finaisVerificados = {};
     let consultaInterrompida = false;
     const consultados = {};
@@ -256,14 +254,7 @@ function executarSincronizacao_(solicitouEscrita) {
         sincronizarElegibilidade_(jogosSheet,atual,rodadaRef,solicitouEscrita,
           env.spreadsheet,resumo,solicitouEscrita ? {} : finaisVerificados);
       }
-      // K/L são consolidados com os placares já escritos e não fazem novas
-      // consultas à API. J (apelidos e ordem existentes) nunca é modificado.
-      const conferidos=jogosSheet.getDataRange().getValues();
-      sincronizarResumoJogadores_(jogosSheet,conferidos,nicks,solicitouEscrita,env.spreadsheet,resumo);
-    } else {
-      resumo.elegibilidadeIgnorada = 'Consulta Lichess interrompida; recalcular na próxima execução';
-      resumo.resumoIgnorado = 'Consulta Lichess interrompida; nenhum total gravado';
-    }
+    } else resumo.elegibilidadeIgnorada = 'Consulta Lichess interrompida; recalcular na próxima execução';
     console.log('Reinos: resumo ' + JSON.stringify(resumo));
     return resumo;
   } finally {
@@ -947,133 +938,4 @@ function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,re
     if(proposta.novo==='Aguardando início')resumo.aguardandoAplicados++;
     else resumo.aguardandoRevertidos++;
   }
-}
-
-/**
- * #18 — Resumo por participante, na ordem J = nickname, K = pontos,
- * L = partidas CONCLUÍDAS (sem folgas), conforme cabeçalhos já existentes.
- * O total parte exclusivamente dos resultados B/C da própria planilha,
- * após a sincronização; não consome a API, não modifica J ou A:H.
- */
-function pontosValidos_(value) {
-  if(typeof value==='number')return Number.isFinite(value)?value:null;
-  if(typeof value!=='string'||!value.trim())return null;
-  const txt=value.trim().replace(',','.');
-  if(!/^(?:0|1|0\.5)$/.test(txt))return null;
-  return Number(txt);
-}
-function apurarResumoJogadores_(grid,nicks) {
-  const entries=Object.entries(nicks);
-  if(!entries.length) return {error:'Sem jogadores cadastrados'};
-  const roster={};
-  for(const [name,nick] of entries){
-    if(!nick || roster[nick] || !/^[a-z0-9_-]{1,30}$/.test(nick))
-      return {error:'Jogadores sem nick válido ou com nick duplicado'};
-    roster[nick]={name,points:0,played:0};
-  }
-  let inconsistencias=0;
-  for(const row of grid){
-    const white=normalizarNome_(row[0]),black=normalizarNome_(row[3]);
-    const status=normalizarNome_(row[4]);
-    if(!white || /^rodada\s+\d+$/.test(white))continue;
-    if(status==='bye') {
-      const nick=nicks[white];
-      if(!nick || !roster[nick]){inconsistencias++;continue;}
-      if(celulaVazia_(row[1]))continue; // folga sem pontuação equivale a zero
-      const bye=pontosValidos_(row[1]);
-      if(bye===null || ![0,.5,1].includes(bye)){inconsistencias++;continue;}
-      roster[nick].points+=bye;
-      continue;
-    }
-    if(!black)continue;
-    const wn=nicks[white],bn=nicks[black];
-    if(!wn||!bn||wn===bn||!roster[wn]||!roster[bn]){
-      inconsistencias++;continue;
-    }
-    const b=row[1],c=row[2];
-    if(celulaVazia_(b)&&celulaVazia_(c)){
-      if(status==='finalizado')inconsistencias++;
-      continue;
-    }
-    if(celulaVazia_(b)||celulaVazia_(c)){inconsistencias++;continue;}
-    const pw=pontosValidos_(b),pb=pontosValidos_(c);
-    if(pw===null||pb===null||Math.abs(pw+pb-1)>1e-9){
-      inconsistencias++;continue;
-    }
-    roster[wn].points+=pw;roster[bn].points+=pb;
-    roster[wn].played++;roster[bn].played++;
-  }
-  return inconsistencias?{error:'Placar incompleto ou inconsistente em '+inconsistencias+' linha(s)'}:{roster};
-}
-function sincronizarResumoJogadores_(sheet,grid,nicks,escrever,spreadsheet,resumo) {
-  const calc=apurarResumoJogadores_(grid,nicks);
-  if(calc.error){
-    resumo.resumoIgnorado=calc.error;
-    console.log('Reinos: resumo de jogadores ignorado: '+calc.error);return;
-  }
-  // J2:J(n+1) já contém os nicks oficiais. Não modificar a ordem,
-  // criar nomes adicionais ou sobrescrever tabela desconhecida.
-  const count=Object.keys(calc.roster).length;
-  const range=sheet.getRange(1,10,count+1,3);
-  const snapshot=range.getValues();
-  if(normalizarNome_(snapshot[0]?.[0])!=='jogador'||
-     normalizarNome_(snapshot[0]?.[1])!=='pontos'||
-     normalizarNome_(snapshot[0]?.[2])!=='partidas'){
-    resumo.resumoIgnorado='Cabeçalhos J1:L1 diferentes; nenhuma célula alterada';
-    return;
-  }
-  const names=new Set(), values=[];
-  for(let i=1;i<=count;i++) {
-    const nick=normalizarNome_(snapshot[i]?.[0]);
-    if(!nick||!calc.roster[nick]||names.has(nick)){
-      resumo.resumoIgnorado='Tabela J2:J com nicks ausentes/duplicados/desconhecidos';
-      return;
-    }
-    names.add(nick);
-    values.push([calc.roster[nick].points,calc.roster[nick].played]);
-  }
-  const statsRange=sheet.getRange(2,11,count,2);
-  const formulas=statsRange.getFormulas();
-  if(formulas.some(row=>row.some(Boolean))){
-    resumo.resumoIgnorado='Fórmula presente em K/L; não substituir automaticamente';
-    return;
-  }
-  const changes=values.map((v,i)=>({index:i,old:snapshot[i+1].slice(1,3),values:v}))
-    .filter(c=>!valoresIguais_(c.old[0],c.values[0]) || !valoresIguais_(c.old[1],c.values[1]));
-  resumo.resumoCandidatos=changes.length;
-  if(!changes.length)return;
-  console.log('Reinos: resumo J:L — '+changes.length+
-    ' jogador(es) para atualizar'+(escrever?'':' [SIMULAÇÃO]'));
-  if(!escrever)return;
-  // Conferência final: evitar sobrescrita silenciosa de nomes, de fórmulas
-  // e de resultados modificados enquanto se calculava o quadro.
-  const current=sheet.getDataRange().getValues();
-  if(!grid.every((row,i)=>[0,1,2,3,4,5].every(col=>
-     valorSnapshotIgual_(row[col]===undefined?'':row[col],
-       current[i]?.[col]===undefined?'':current[i][col])))){
-    resumo.resumoConflitos++;return;
-  }
-  const again=range.getValues();
-  const formulasNow=statsRange.getFormulas();
-  if(!snapshot.every((row,i)=>row.every((v,j)=>valorSnapshotIgual_(v,again[i][j])))||
-     formulasNow.some(row=>row.some(Boolean))){
-    resumo.resumoConflitos++;return;
-  }
-  statsRange.setValues(values);
-  SpreadsheetApp.flush();
-  const confirmed=statsRange.getValues();
-  if(!values.every((row,i)=>row.every((v,j)=>valoresIguais_(v,confirmed[i][j]))))
-    throw new Error('Resumo gravado, mas a confirmação de K/L falhou');
-  resumo.resumoAplicados=changes.length;
-  try{
-    let audit=spreadsheet.getSheetByName(REINOS_CONFIG.ABA_AUDITORIA_RESUMO);
-    if(!audit){
-      audit=spreadsheet.insertSheet(REINOS_CONFIG.ABA_AUDITORIA_RESUMO);
-      audit.appendRow(['UTC','Nick','Pontos antes','Partidas antes','Pontos depois','Partidas depois']);
-    }
-    for(const c of changes){
-      audit.appendRow([new Date().toISOString(),snapshot[c.index+1][0],
-        c.old[0],c.old[1],c.values[0],c.values[1]]);
-    }
-  }catch(e){console.error('Reinos: resumo K/L gravado, mas auditoria falhou.');}
 }

@@ -835,9 +835,10 @@ function rodadaReferencia_(spreadsheet) {
   }
   return null;
 }
-/** Projeta a disponibilidade conforme a regra da página Rodadas.
- * Não considera "aguardando" como partida ativa. Dois confrontos
- * alternativos podem estar aptos; iniciar um torna o outro ocupado.
+/** #18: uma única proposta por participante, alinhada ao site.
+ * Prioridade: rodada atual, distância absoluta à rodada de referência,
+ * rodada anterior antes da seguinte em empate, linha da planilha.
+ * "Aguardando início" não ocupa jogador: só a seleção o reserva.
  */
 function propostasElegibilidade_(rows,referencia,finaisVerificados) {
   const ocupados=new Set();
@@ -865,14 +866,31 @@ function propostasElegibilidade_(rows,referencia,finaisVerificados) {
     }
     confrontos.push({row:i+1,white,black,round:rodada,estado,final,temLink,parcial,raw:r});
   }
+  // Primeiro selecionar globalmente; nunca liberar duas partidas que
+  // compartilhem um jogador, mesmo que ambas pudessem iniciar isoladamente.
+  const candidatas=confrontos.filter(m=>
+    ['jogador em outra partida','aguardando inicio'].includes(m.estado) &&
+    !m.final && !m.temLink && !m.parcial && m.round<=referencia+1 &&
+    !ocupados.has(m.white) && !ocupados.has(m.black));
+  candidatas.sort((a,b)=>
+    Math.abs(a.round-referencia)-Math.abs(b.round-referencia) ||
+    a.round-b.round || a.row-b.row);
+  const reservados=new Set();
+  const escolhidas=new Set();
+  for(const m of candidatas) {
+    if(reservados.has(m.white) || reservados.has(m.black))continue;
+    escolhidas.add(m.row);
+    reservados.add(m.white);
+    reservados.add(m.black);
+  }
+  // Reverter também marcações antigas excedentes: elas não devem continuar
+  // aparecendo em "Aguardando início" depois de corrigida a regra.
   const propostas=[];
   for(const m of confrontos) {
     if(!['jogador em outra partida','aguardando inicio'].includes(m.estado))continue;
     if(m.final||m.temLink||m.parcial)continue;
-    const apto=m.round<=referencia+1 &&
-      !ocupados.has(m.white)&&!ocupados.has(m.black);
-    const novo=apto?'Aguardando início':'Jogador em outra partida';
-    if(nomeNormalizado_(m.raw[4])!==novo) propostas.push({row:m.row,original:m.raw,novo});
+    const novo=escolhidas.has(m.row)?'Aguardando início':'Jogador em outra partida';
+    if(nomeNormalizado_(m.raw[4])!==novo)propostas.push({row:m.row,original:m.raw,novo});
   }
   return propostas;
 }

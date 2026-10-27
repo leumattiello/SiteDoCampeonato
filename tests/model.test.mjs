@@ -277,15 +277,43 @@ test('#11: não oferece criar partida já vinculada ou fora da janela permitida'
  ]});
  assert.deepEqual(eligibleToStart(t).map(m=>m.id),['free']);
 });
-test('#11: opções compartilhadas são alternativas, não partidas simultâneas',()=>{
+test('#18: recomenda apenas uma partida por jogador, com prioridade da rodada atual',()=>{
  const t=buildTournament({currentRound:4,matches:[
   m(4,'Ana','Bia',null,'Jogador em outra partida',{id:'a'}),
   m(5,'Ana','Carol',null,'Jogador em outra partida',{id:'b'}),
   m(5,'Dora','Eva',null,'Jogador em outra partida',{id:'c'}),
  ]});
  const list=eligibleToStart(t);
- assert.equal(list.length,3);
- assert.deepEqual([...alternativeStartPlayers(list)],['Ana']);
+ assert.deepEqual(list.map(x=>x.id),['a','c']);
+ assert.deepEqual([...alternativeStartPlayers(list)],[]);
+ assert.equal(t.matches.find(x=>x.id==='b').derivedStatus,'busy');
  assert.equal(eligibleToStart(null).length,0);
  assert.equal(eligibleToStart({...t,active:false}).length,0);
+});
+
+test('#18: prefere a rodada atual mesmo quando aparece mais abaixo no quadro',()=>{
+ const t=buildTournament({currentRound:6,matches:[
+  m(5,'Ana','Bia',null,'Aguardando início',{id:'older'}),
+  m(6,'Ana','Carol',null,'Jogador em outra partida',{id:'current'}),
+  m(7,'Ana','Dora',null,'Jogador em outra partida',{id:'next'}),
+  m(6,'Eva','Fabio',null,'Jogador em outra partida',{id:'independent'})
+ ]});
+ assert.deepEqual(eligibleToStart(t).map(x=>x.id),['current','independent']);
+ assert.equal(t.ready.length,2);
+ assert.equal(t.matches.find(x=>x.id==='older').derivedStatus,'busy');
+});
+test('#18: sem rodada atual disponível prioriza rodada anterior em empate de distância',()=>{
+ const t=buildTournament({currentRound:6,matches:[
+  m(7,'Ana','Bia',null,'Jogador em outra partida',{id:'forward'}),
+  m(5,'Ana','Carol',null,'Jogador em outra partida',{id:'back'})
+ ]});
+ assert.deepEqual(eligibleToStart(t).map(x=>x.id),['back']);
+});
+test('#18: desempate estável na mesma rodada; diferentes jogadores podem começar',()=>{
+ const t=buildTournament({currentRound:6,matches:[
+  m(6,'Ana','Bia',null,'Jogador em outra partida',{id:'first'}),
+  m(6,'Ana','Carol',null,'Aguardando início',{id:'duplicate'}),
+  m(6,'Dora','Eva',null,'Jogador em outra partida',{id:'free'})
+ ]});
+ assert.deepEqual(eligibleToStart(t).map(x=>x.id),['first','free']);
 });

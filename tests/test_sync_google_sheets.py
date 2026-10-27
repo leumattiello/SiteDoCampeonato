@@ -17,6 +17,8 @@ class ByePointsImportTest(unittest.TestCase):
         imported = parse_matches(rows, '2')
         self.assertEqual([m['byePoints'] for m in imported], [1, 0, 0.5, None, 0.25, None])
         self.assertTrue(all(m['result'] == 'bye' for m in imported[:5]))
+        # A importação preserva o valor: site e Sheets só contarão o Bye de 1.
+        self.assertEqual([m['byePoints'] == 1 for m in imported[:5]], [True, False, False, False, False])
         self.assertEqual(imported[-1]['result'], '1-0')
         self.assertEqual(imported[-1]['white'], 'Joao')
         self.assertEqual(imported[-1]['black'], 'Maria')

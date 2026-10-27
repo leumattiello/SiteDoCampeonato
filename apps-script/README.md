@@ -34,3 +34,16 @@ Execute `diagnosticarHumbertoLigia()` no Apps Script atualizado: a função **n�
 A rotina `simularResultados()` agora detecta alterações verificadas no Lichess para a coluna E de partidas **já vinculadas** à coluna F. `aplicarResultados()` escreve **Em andamento** para `started` somente se B/C estão vazias e a partida não estava marcada como finalizada; para resultado final comprovado, escreve **Finalizado** quando não há conflito com placar manual. O fluxo pré-existente continua a preencher resultado B/C e datas G/H, com a mesma autorização de escrita. Alterações em E são auditadas em `_AuditoriaStatusLichess`.
 
 **Homologação:** instalar o Código.gs em uma **cópia** antes de usar na original. Executar `simularResultados()` e verificar a linha 37 (Humberto x Ligia), depois aplicar apenas na cópia com as propriedades de escrita. Em seguida, conferir auditoria e idempotência. O merge no GitHub **não instala automaticamente** o Apps Script vinculado à planilha. Transições como `created`, `aborted`, conflito de pontuação, ou descoberta geral de jogos sem link **não fazem parte desta primeira fatia**, embora estejam planejadas na #18. A execução automática continua desativando a descoberta de novas partidas, por segurança.
+
+## Melhoria #18: estados de elegibilidade (segunda fatia — PR #12)
+
+Após **consultar os jogos vinculados, processar resultados, status e datas**, a rotina reavalia as partidas pendentes da edição atual, usando `Config!B2` (chave `rodada_atual`) e os marcadores de rodada na aba `2`. Não faz chamadas adicionais ao Lichess.
+
+- Candidata deve estar **sem resultado B/C e sem link F**, não ser Bye e manter E = `Jogador em outra partida` ou `Aguardando início`.
+- Para receber **`Aguardando início`**, ambos os jogadores devem estar livres de qualquer partida do campeonato iniciada/ainda inconclusiva; aceita rodadas anteriores e a rodada de referência + 1, mas não as futuras.
+- Se deixar de estar apta por surgimento de partida ativa ou mudança de rodada, uma célula previamente `Aguardando início` é revertida a `Jogador em outra partida`. Não altera `Em andamento`, `Finalizado`, `Bye` nem status personalizados.
+- Confrontos sem placar mas com link, estado ativo ou finalização inconclusiva continuam ocupando os jogadores. **Duas possibilidades que envolvem a mesma pessoa são alternativas, não autorização para começar simultaneamente.**
+- Simulação leva em conta resultados Lichess recém-confirmados mesmo antes de gravá-los. Execução com escrita relê a planilha atualizada; cada alteração em E passa por verificação da linha A:H e da rodada de referência, usa as proteções existentes, e é auditada em `_AuditoriaStatusLichess`.
+- Em HTTP 429 ou interrupção da varredura, não atualiza elegibilidade nessa execução. Se a configuração de rodada estiver ausente/incorreta, não altera E.
+
+**Homologação:** usar primeiro `simularResultados()` numa cópia, conferir propostas `aguardandoCandidatos`; depois `aplicarResultados()` na cópia autorizada, conferir E e auditoria, repetir para idempotência e simular novo jogo em andamento para ver reversão. Merge GitHub não instala `Code.gs` automaticamente. O site usa seu próprio cálculo; a planilha passa a espelhar essa regra após o acionador.

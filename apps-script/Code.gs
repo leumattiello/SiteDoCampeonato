@@ -1050,7 +1050,7 @@ function sincronizarResumoJogadores_(sheet,grid,nicks,escrever,spreadsheet,resum
   const current=sheet.getDataRange().getValues();
   if(!grid.every((row,i)=>[0,1,2,3,4,5].every(col=>
      valorSnapshotIgual_(row[col]===undefined?'':row[col],
-       current[i]?.[col]===undefined?'':current[i][col]))){
+       current[i]?.[col]===undefined?'':current[i][col])))){
     resumo.resumoConflitos++;return;
   }
   const again=range.getValues();

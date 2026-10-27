@@ -42,7 +42,9 @@ Após **consultar os jogos vinculados, processar resultados, status e datas**, a
 - Candidata deve estar **sem resultado B/C e sem link F**, não ser Bye e manter E = `Jogador em outra partida` ou `Aguardando início`.
 - Para receber **`Aguardando início`**, ambos os jogadores devem estar livres de qualquer partida do campeonato iniciada/ainda inconclusiva; aceita rodadas anteriores e a rodada de referência + 1, mas não as futuras.
 - Se deixar de estar apta por surgimento de partida ativa ou mudança de rodada, uma célula previamente `Aguardando início` é revertida a `Jogador em outra partida`. Não altera `Em andamento`, `Finalizado`, `Bye` nem status personalizados.
-- Confrontos sem placar mas com link, estado ativo ou finalização inconclusiva continuam ocupando os jogadores. **Duas possibilidades que envolvem a mesma pessoa são alternativas, não autorização para começar simultaneamente.**
+- Confrontos sem placar mas com link, estado ativo ou finalização inconclusiva continuam ocupando os jogadores. **A seleção reserva os dois participantes**, portanto uma pessoa nunca tem duas partidas marcadas como `Aguardando início`.
+- Se várias partidas puderem começar, prioriza a rodada de referência, depois a distância até ela; em empate, rodada anterior antes da futura e, na mesma rodada, a ordem das linhas. Marca apenas um par por jogador e reverte marcações `Aguardando início` excedentes para `Jogador em outra partida`.
+- O site e o Apps Script adotam a mesma seleção; confrontos não escolhidos continuam pendentes, mesmo quando isoladamente seriam possíveis.
 - Simulação leva em conta resultados Lichess recém-confirmados mesmo antes de gravá-los. Execução com escrita relê a planilha atualizada; cada alteração em E passa por verificação da linha A:H e da rodada de referência, usa as proteções existentes, e é auditada em `_AuditoriaStatusLichess`.
 - Em HTTP 429 ou interrupção da varredura, não atualiza elegibilidade nessa execução. Se a configuração de rodada estiver ausente/incorreta, não altera E.
 

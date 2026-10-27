@@ -1,5 +1,5 @@
 import {LichessAuth} from './lichess-auth.js';
-import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches,eligibleToStart,alternativeStartPlayers} from './model.js';
+import {buildTournament,nextMatches,validLichessUrl,parseDate,durationDays,byeScore,correspondenceRating,replayInfo,homeActiveMatches,eligibleToStart} from './model.js';
 import {activeBoardInfo} from './live.js';
 import {contextualHelp} from './contextual-help.js';
 import {gameStats} from './game-stats.js';
@@ -224,13 +224,10 @@ function fixtureMarkup(m, showRatings=true){
 }
 function drawEligibleStarts(){
   const matches=eligibleToStart(current);
-  const alternatives=alternativeStartPlayers(matches);
   byId('eligible-start-count').textContent=matches.length+' confronto'+(matches.length===1?'':'s')+' apto'+(matches.length===1?'':'s');
   byId('eligible-start-content').innerHTML=matches.length?matches.map(m=>{
-    const shared=alternatives.has(m.white)||alternatives.has(m.black);
     return '<article class="eligible-start-item"><div><strong>Rodada '+s(m.round)+': '+s(formattedName(m.white))+' × '+s(formattedName(m.black))+'</strong>'+
       '<p>Brancas: '+s(m.white)+' · Pretas: '+s(m.black)+'</p>'+
-      (shared?'<small class="eligible-start-note">⚠ Opção alternativa: há outra partida apta com pelo menos um destes jogadores. Somente uma pode ser iniciada por vez.</small>':'')+
       '</div><button type="button" class="button button-light" data-round="'+s(m.round)+'" data-view="rodadas">Ver rodada ›</button></article>';
   }).join(''):'<div class="empty-message">Nenhum confronto está liberado para começar no momento.</div>';
 }

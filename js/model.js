@@ -91,6 +91,12 @@ export function buildTournament(tournament){
   for (const m of matches) if(!m.result && (m.lichessDecision?.status==='playing' || norm(m.status)==='em andamento') && m.black){ activeNames.add(m.white);activeNames.add(m.black); }
   const currentRound=Number(tournament.currentRound)||1;
   const decorated=matches.map(m=>({...m,derivedStatus:getMatchStatus(m,activeNames,currentRound),duration:durationDays(m)}));
+  const selected=new Set(selectStarts(decorated.filter(m=>
+    m.derivedStatus==='ready' && !m.result && !m.url && !!m.white && !!m.black),
+    currentRound));
+  for(const m of decorated) {
+    if(m.derivedStatus==='ready' && !selected.has(m))m.derivedStatus='busy';
+  }
   const regular=decorated.filter(m=>m.derivedStatus!=='bye');
   const finished=regular.filter(m=>m.derivedStatus==='finished');
   const ongoing=regular.filter(m=>m.derivedStatus==='playing');
@@ -133,6 +139,22 @@ export function homeActiveMatches(tournament) {
  * podem ser iniciadas simultaneamente. Os confrontos devem seguir a cor definida
  * pela tabela Schuring e ter até uma rodada além da rodada de referência.
  */
+/** Escolhe um emparelhamento sem conflitos: prioridade para a rodada de
+ * referência; depois distância, rodada mais antiga e ordem da planilha.
+ * Nenhum participante aparece em dois confrontos escolhidos. */
+function selectStarts(candidates, reference) {
+  const ranked=candidates.map((m,index)=>({m,index})).sort((a,b)=>
+    Math.abs(a.m.round-reference)-Math.abs(b.m.round-reference) ||
+    a.m.round-b.m.round || a.index-b.index);
+  const reserved=new Set(), selected=new Set();
+  for(const {m} of ranked){
+    if(reserved.has(m.white)||reserved.has(m.black))continue;
+    selected.add(m);
+    reserved.add(m.white);reserved.add(m.black);
+  }
+  // Preserve planilha order for display after selecting by priority.
+  return candidates.filter(m=>selected.has(m));
+}
 export function eligibleToStart(t) {
   if (!t || t.active===false || !Array.isArray(t.matches)) return [];
   const reference=Number(t.currentRound);
@@ -146,15 +168,16 @@ export function eligibleToStart(t) {
       if(m.black) occupied.add(m.black);
     }
   }
-  return t.matches.filter(m=>
+  const possible=t.matches.filter(m=>
     m.derivedStatus==='ready' &&
     Number.isInteger(m.round) && m.round>=1 && m.round<=reference+1 &&
     typeof m.white==='string' && !!m.white.trim() &&
     typeof m.black==='string' && !!m.black.trim() && m.white!==m.black &&
     !m.result && !(typeof m.url==='string' ? m.url.trim() : m.url) &&
     !occupied.has(m.white) && !occupied.has(m.black));
+  return selectStarts(possible,reference);
 }
-/** Participantes presentes em mais de uma opção, sem liberar simultaneidade. */
+/** Compatibilidade: detecta conflitos em listas externas não filtradas. */
 export function alternativeStartPlayers(matches) {
   const counts=new Map();
   for(const m of matches||[]) for(const name of [m.white,m.black])

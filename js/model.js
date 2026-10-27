@@ -78,7 +78,7 @@ export function getMatchStatus(m, activeNames, referenceRound=1) {
   return 'ready';
 }
 // Nas folgas, a coluna B do Google Sheets define a pontuação.
-// Ausência de valor equivale a zero, nunca a um ponto automático.
+// Ausência de valor equivale a zero. Apenas Bye de 1 ponto conta como rodada disputada.
 export function byeScore(value) {
   if (value === null || value === undefined || String(value).trim() === '') return 0;
   const parsed = Number(String(value).trim().replace(',', '.'));
@@ -110,7 +110,7 @@ export function buildTournament(tournament){
   };
   for(const m of decorated){
     const a=make(m.white),b=make(m.black);
-    if(m.derivedStatus==='bye'){if(a){const pts=byeScore(m.byePoints);a.points+=pts;a.byePoints+=pts;a.byes+=1;}continue;}
+    if(m.derivedStatus==='bye'){if(a){const pts=byeScore(m.byePoints);a.points+=pts;a.byePoints+=pts;a.byes+=1;if(pts===1)a.played+=1;}continue;}
     if(m.derivedStatus==='playing'){if(a)a.ongoing++;if(b)b.ongoing++;continue;}
     if(m.derivedStatus!=='finished')continue;
     if(a)a.played++;

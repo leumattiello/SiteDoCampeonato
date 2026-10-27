@@ -64,7 +64,8 @@ def parse_matches(rows,sheet):
         matches.append({
             'id':f'ed{sheet}-r{round_number}-l{index}', 'round':round_number,
             'white':white,'black':None if bye else black,'result':result,'status':status,
-            # Valor real da coluna B da planilha; inclusive zero e meio ponto.
+            # Valor real da coluna B, incluindo zero e frações. A contagem
+            # de rodadas no site considera Bye somente quando este valor é 1.
             'byePoints':a if bye else None,
             'url':url or None,'start':iso_date(start),'end':iso_date(end),'sheetRow':index,
         })

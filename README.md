@@ -5,7 +5,7 @@ Site gratuito para campeonatos de xadrez por correspondência, hospedado no **Gi
 ## O que já funciona
 
 - Página inicial medieval e responsiva; visualização por participante (seleção salva apenas no próprio navegador).
-- Classificação calculada automaticamente: vitória 1, empate 0,5, derrota 0 e folga com pontuação variável definida pela coluna B da respectiva linha na planilha.
+- Classificação calculada automaticamente: vitória 1, empate 0,5, derrota 0 e folga com pontuação variável definida pela coluna B da respectiva linha na planilha. O indicador J (rodadas disputadas) contabiliza somente Bye de **exatamente 1 ponto**, além dos jogos concluídos; Bye de 0 ou 0,5 ponto não aumenta J.
 - Rodadas Schuring; confronto pronto apenas se os dois não estiverem disputando outra partida e sua rodada for no máximo **rodada atual + 1**. Uma partida antiga (abaixo da rodada atual) pode ser iniciada se ambos estiverem livres.
 - **Resultado sobrepõe status**: o placar `1–0`, `0–1` ou `½–½` é tratado como finalizado mesmo que E ainda diga `Em andamento`.
 - Links do Lichess (quando preenchidos); datas de início/fim; duração em dias; últimas cinco partidas por data de fim (quando informada).
@@ -33,7 +33,7 @@ Por segurança, só há replay quando o resultado final, o ID do jogo e a decis�
 | G (nova) | Data de início | `14/10/2026` |
 | H (nova) | Data de encerramento | `28/10/2026` |
 
-Nas linhas de folga (`Bye` em E), D fica vazia e **B define a pontuação concedida** (ex.: `1`, `0,5` ou `0`). B vazia equivale a 0 ponto. A coluna **Bye (pts)** da classificação exibe os pontos recebidos em folgas, não a quantidade de folgas. Não preencher resultado `1–0` antes do encerramento. Para a URL use o endereço completo como texto visível da célula; evite `=HYPERLINK(...; "Clique aqui")`, que pode exportar só o rótulo.
+Nas linhas de folga (`Bye` em E), D fica vazia e **B define a pontuação concedida** (ex.: `1`, `0,5` ou `0`). B vazia equivale a 0 ponto. A coluna **Bye (pts)** da classificação exibe os pontos recebidos em folgas, não a quantidade de folgas. Uma folga de **1 ponto** aumenta o indicador J de rodadas disputadas; folgas de **0 ou 0,5 ponto** não o aumentam. Em nenhum caso a folga conta como vitória ou partida de pretas para desempates. Não preencher resultado `1–0` antes do encerramento. Para a URL use o endereço completo como texto visível da célula; evite `=HYPERLINK(...; "Clique aqui")`, que pode exportar só o rótulo.
 
 Se alguém registrar pontos e esquecer de trocar E de `Em andamento` para `Finalizado`, o resultado terá prioridade. Se marcar `Finalizado` mas **não** preencher B e C, o site sinalizará `Falta informar o resultado` e não atribuirá pontos.
 

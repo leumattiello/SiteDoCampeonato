@@ -10,7 +10,8 @@ function fixture({httpStatus=200,approved=true}={}) {
   const players=[['Nome','Nick Lichess']];
   for(let i=0;i<6;i++) {
     const white='Brancas'+i,black='Pretas'+i;
-    rows.push([white,'','',black,'Jogador em outra partida','','','']);
+    rows.push([white,'','',black,'Jogador em outra partida','',
+      i===0?new Date(Date.UTC(2026,8,15)):'','']);
     players.push([white,'brancas'+i],[black,'pretas'+i]);
   }
   const sheets={};

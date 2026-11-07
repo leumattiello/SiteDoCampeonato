@@ -109,3 +109,44 @@ test('busca reduzida continua recusando jogos fora da data mínima',()=>{
  assert.equal(r.candidatos,0);
  assert.equal(r.descartadosPorData,1);
 });
+
+test('varredura proativa circula por confrontos sem link e atualiza o cursor',()=>{
+ const f=fixture({omitGame:true});
+ // Adiciona mais quatro duplas nas mesmas contas de teste. O cursor avança
+ // por linha (e não fixa indefinidamente os primeiros confrontos).
+ for(let i=0;i<5;i++)
+   f.rows.push(['Humberto','','','Ligia','Jogador em outra partida','','','']);
+ const props={};
+ // Teste do algoritmo do cursor: chamadas simuladas não devem gravar.
+ const first=f.context.descobrirPartidas_(false,null,{automatica:true});
+ assert.equal(first.modo,'SIMULACAO');
+ assert.equal(first.aplicados,0);
+ assert.equal(first.cursorNovo,null);
+ assert.ok(first.consultas<=8);
+});
+test('partida encerrada com placar manual só pode ter link vinculado se a pontuação coincidir',()=>{
+ const f=fixture({caseEnrico:true,listDays:1});
+ f.rows[4][1]=1;f.rows[4][2]=0;f.rows[4][4]='Finalizado';
+ const old=f.context.placarLichess_;
+ f.context.placarLichess_=g=>[1,0];
+ const match=f.context.diagnosticarEnricoGabriel();
+ assert.equal(match.candidatos,1);
+ assert.equal(f.rows[4][5],'');
+ f.context.placarLichess_=g=>[0,1];
+ const wrong=f.context.diagnosticarEnricoGabriel();
+ assert.equal(wrong.candidatos,0);
+ f.context.placarLichess_=old;
+});
+test('proteções manuais priorizam alterações humanas de F e E',()=>{
+ const f=fixture({caseEnrico:true,listDays:1});
+ const ctrlRows=[['UTC','Key','Col','Row'],
+   [new Date().toISOString(),'6|enrico|gabriel','F',5],
+   [new Date().toISOString(),'6|enrico|gabriel','E',5]];
+ const ctrl={getDataRange:()=>({getValues:()=>ctrlRows})};
+ const grid=f.rows;
+ const k=f.context.chavesConfrontos_(grid);
+ assert.equal(k[4],'6|enrico|gabriel');
+ const protections={'5':new Set(['F','E'])};
+ assert.equal(f.context.estaProtegidoManualmente_(protections,5,'F'),true);
+ assert.equal(f.context.estaProtegidoManualmente_(protections,5,'B'),false);
+});

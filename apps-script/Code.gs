@@ -22,10 +22,13 @@ const REINOS_CONFIG = Object.freeze({
   ABA_AUDITORIA_DATAS: '_AuditoriaDatasLichess',
   ABA_AUDITORIA_VINCULOS: '_AuditoriaVinculosLichess',
   ABA_AUDITORIA_STATUS: '_AuditoriaStatusLichess',
+  ABA_CONTROLE_MANUAL: '_ControleManualLichess',
   ID_PLANILHA_ORIGINAL: '1YlGQwfYdT_J633frIN_wPiW3ExYqjC1gcum2xi1KwGc',
   MAX_CONSULTAS: 80,
   MAX_CONSULTAS_DESCOBERTA: 8,
-  PAUSA_MS: 400
+  PAUSA_MS: 1100,
+  CURSOR_DESCOBERTA: 'DESCOBERTA_ULTIMO_CONFRONTO_V1',
+  PAUSA_DESCOBERTA: 'DESCOBERTA_PAUSA_ATE_V1'
 });
 
 /** Simulação, sem modificar NENHUMA célula (nem cria a aba de auditoria). */
@@ -43,11 +46,20 @@ function sincronizarAutomaticamente() {
   const props = PropertiesService.getScriptProperties();
   const habilitado = props.getProperty('EXECUCAO_AUTOMATICA_HABILITADA') === 'SIM';
   console.log('Reinos: execução automática ' + (habilitado ? 'habilitada' : 'em simulação'));
-  // A descoberta automática não foi homologada: evita dezenas de chamadas
-  // repetidas e quaisquer gravações de vínculos sem fonte confiável.
-  // simularDescoberta continua disponível manualmente para diagnóstico.
+  // Sempre descobrir ANTES de conciliar resultados/status/datas, para
+  // integrar vínculos recém-confirmados na mesma execução.
+  const pausaAte = Number(props.getProperty(REINOS_CONFIG.PAUSA_DESCOBERTA) || 0);
+  if (Date.now() < pausaAte) {
+    console.log('Reinos: Lichess em pausa após resposta de proteção; sem novas requisições.');
+    return {descoberta:{status:'em_pausa'}, consolidacao:{status:'adiada'}};
+  }
+  const descoberta = descobrirPartidas_(habilitado, null, {automatica:true});
+  if (descoberta.interrompida) {
+    console.log('Reinos: consolidação adiada para evitar consultas após erro da API.');
+    return {descoberta:descoberta, consolidacao:{status:'adiada'}};
+  }
   const consolidacao = executarSincronizacao_(habilitado);
-  return Object.assign({}, consolidacao, {descoberta: {status:'desabilitada',motivo:'pendente de homologação'}});
+  return Object.assign({}, consolidacao, {descoberta:descoberta});
 }
 
 /**
@@ -87,6 +99,7 @@ function executarSincronizacao_(solicitouEscrita) {
     const jogadoresSheet = env.spreadsheet.getSheetByName(REINOS_CONFIG.ABA_JOGADORES);
     if (!jogosSheet || !jogadoresSheet) throw new Error('Faltam as abas 2 e/ou Jogadores.');
     const grid = jogosSheet.getDataRange().getValues();
+    const protecoes = lerProtecoesManuais_(env.spreadsheet,grid);
     const nicks = mapaJogadores_(jogadoresSheet.getDataRange().getValues());
     const indices = contarIdsJogo_(grid);
     const token = env.props.getProperty('LICHESS_API_TOKEN');
@@ -137,10 +150,13 @@ function executarSincronizacao_(solicitouEscrita) {
         Utilities.sleep(REINOS_CONFIG.PAUSA_MS);
       }
       const lookup = consultados[gameId];
-      if (lookup.httpStatus === 429) {
+      if ([401,403,429].includes(lookup.httpStatus)) {
         resumo.erros++;
-        console.log('Reinos: HTTP 429; consultas suspensas para respeitar limite do Lichess.');
+        console.log('Reinos: HTTP '+lookup.httpStatus+
+          '; consultas suspensas para respeitar proteção do Lichess.');
         consultaInterrompida = true;
+        if (solicitouEscrita)env.props.setProperty(REINOS_CONFIG.PAUSA_DESCOBERTA,
+          String(Date.now()+(lookup.httpStatus===429?3600000:1800000)));
         break;
       }
       if (lookup.error) {
@@ -172,6 +188,7 @@ function executarSincronizacao_(solicitouEscrita) {
       // liberam os jogadores mesmo que o resultado ainda não tenha sido gravado.
       if (result !== null && !conflitoResultado) finaisVerificados[rowNumber] = true;
       const podeMudarStatus = statusProposto &&
+        !estaProtegidoManualmente_(protecoes,rowNumber,'E') &&
         !(statusProposto === 'Em andamento' && normalizarNome_(expected[4]).toLowerCase() === 'finalizado') &&
         (statusProposto === 'Finalizado'
           ? !conflitoResultado
@@ -183,11 +200,14 @@ function executarSincronizacao_(solicitouEscrita) {
       }
       const datas = datasLichess_(game, result !== null);
       const faltamDatas = {
-        inicio: celulaVazia_(expected[6]) && !!datas.inicio,
-        fim: celulaVazia_(expected[7]) && !!datas.fim
+        inicio: celulaVazia_(expected[6]) && !!datas.inicio &&
+          !estaProtegidoManualmente_(protecoes,rowNumber,'G'),
+        fim: celulaVazia_(expected[7]) && !!datas.fim &&
+          !estaProtegidoManualmente_(protecoes,rowNumber,'H')
       };
       const dadosDatas = faltamDatas.inicio || faltamDatas.fim;
-      const faltaPlacar = result !== null && celulaVazia_(expected[1]) && celulaVazia_(expected[2]);
+      const faltaPlacar = result !== null && celulaVazia_(expected[1]) && celulaVazia_(expected[2]) &&
+        !['B','C','E'].some(col=>estaProtegidoManualmente_(protecoes,rowNumber,col));
 
       // Datas digitadas pelo organizador não são substituídas. Divergências
       // são registradas para conferência, nunca corrigidas automaticamente.
@@ -252,7 +272,7 @@ function executarSincronizacao_(solicitouEscrita) {
       } else {
         const atual = solicitouEscrita ? jogosSheet.getDataRange().getValues() : grid;
         sincronizarElegibilidade_(jogosSheet,atual,rodadaRef,solicitouEscrita,
-          env.spreadsheet,resumo,solicitouEscrita ? {} : finaisVerificados);
+          env.spreadsheet,resumo,solicitouEscrita ? {} : finaisVerificados,protecoes);
       }
     } else resumo.elegibilidadeIgnorada = 'Consulta Lichess interrompida; recalcular na próxima execução';
     console.log('Reinos: resumo ' + JSON.stringify(resumo));
@@ -497,6 +517,16 @@ function aplicarDescoberta() { return descobrirPartidas_(true); }
 function diagnosticarHumbertoLigia() {
   return descobrirPartidas_(false, {white:'humberto',black:'ligia'});
 }
+/** Diagnóstico dirigido para a rodada 7: nenhuma gravação. */
+function diagnosticarEnricoGabriel() {
+  return descobrirPartidas_(false, {white:'enrico',black:'gabriel'});
+}
+/** Vincula APENAS Enrico x Gabriel após conferir único jogo compatível.
+ * Requer todas as autorizações já usadas por aplicarDescoberta().
+ */
+function aplicarDescobertaEnricoGabriel() {
+  return descobrirPartidas_(true, {white:'enrico',black:'gabriel'});
+}
 
 /** Consulta apenas metadados de uma partida pública para confirmar o prazo.
  * A listagem por usuário pode omitir daysPerTurn, mesmo em correspondência.
@@ -515,10 +545,15 @@ function consultarDetalhesPublicos_(gameId) {
   }catch(e){return null;}
 }
 
-function jogosPublicosPorDupla_(nick, adversario, desde) {
-  const params = ['max=80','perfType=correspondence','ongoing=true','finished=true',
-    'moves=false','clocks=false','evals=false','opening=false','sort=dateDesc',
-    'since='+encodeURIComponent(desde),'vs='+encodeURIComponent(adversario)].join('&');
+function jogosPublicosPorDupla_(nick, adversario) {
+  // Com filtros extras (perfType/since/sort), o endpoint retornou HTTP 200
+  // com zero jogos para um confronto público confirmado. Buscar somente
+  // pela dupla e aplicar as restrições de modalidade, data, estado, tempo
+  // por lance, jogadores e cores localmente em descobrirPartidas_.
+  // A consulta continua limitada a 80 registros, sem lances/relógios/avaliações.
+  const params = ['vs='+encodeURIComponent(adversario),'max=80',
+    'ongoing=true','finished=true','moves=false','clocks=false',
+    'evals=false'].join('&');
   const endpoint = 'https://lichess.org/api/games/user/'+encodeURIComponent(nick)+'?'+params;
   try {
     const response = UrlFetchApp.fetch(endpoint, {
@@ -604,7 +639,9 @@ function gravarVinculoSeInalterado_(sheet,rowNumber,expected,game,spreadsheet) {
   }catch(e){console.error('Reinos: vínculo aplicado mas auditoria falhou na linha '+rowNumber);}
   return true;
 }
-function descobrirPartidas_(escrever, filtro) {
+function descobrirPartidas_(escrever, filtro, opcoes) {
+  opcoes=opcoes||{};
+  const automatica=!!opcoes.automatica;
   const env=obterAmbiente_(escrever);
   let lock=null;
   if(escrever) {
@@ -616,164 +653,199 @@ function descobrirPartidas_(escrever, filtro) {
     const players=env.spreadsheet.getSheetByName(REINOS_CONFIG.ABA_JOGADORES);
     if(!sheet||!players)throw new Error('Abas 2 e Jogadores obrigatórias.');
     const grid=sheet.getDataRange().getValues();
+    const protecoes=lerProtecoesManuais_(env.spreadsheet,grid);
     const nicks=mapaJogadores_(players.getDataRange().getValues());
     const ids=contarIdsJogo_(grid);
     const desde=inicioBuscaVinculos_(grid);
     const resumo={modo:escrever?'GRAVACAO':'SIMULACAO',consultas:0,candidatos:0,aplicados:0,
-      ambiguos:0,ignorados:0,erros:0,
+      ambiguos:0,ignorados:0,erros:0,interrompida:false,consultaParcial:false,
       linhasAnalisadas:0,jogosRetornados:0,jogosDaDupla:0,
       descartadosPorCores:0,descartadosPorModalidade:0,descartadosPorData:0,
       prazoNaoConfirmado:0,jogosConfirmados:0,consultasDetalhes:0,semJogos:0,
-      consultasConta:0,jogosAtivosConta:0,jogosDaDuplaNaConta:0};
-    if(desde===null){console.log('Reinos: não há datas para delimitar a descoberta.');return resumo;}
+      consultasConta:0,jogosAtivosConta:0,jogosDaDuplaNaConta:0,
+      cursorAnterior:null,cursorNovo:null,pendentes:0};
+    if(desde===null){
+      console.log('Reinos: não há datas para delimitar a descoberta.');
+      return resumo;
+    }
     const nomes=Object.values(nicks).filter(Boolean);
     const duplicates=new Set(nomes.filter((nick,i)=>nomes.indexOf(nick)!==i));
     const vistos={};
-    let consultaConta=null;
-    const token=env.props.getProperty('LICHESS_API_TOKEN');
+    const keys=chavesConfrontos_(grid);
+    const pendentes=[];
     for(let idx=0;idx<grid.length;idx++){
-      const expected=Array.from({length:8},(_,i)=>grid[idx][i]===undefined?'':grid[idx][i]);
-      if(!celulaVazia_(expected[5])||!celulaVazia_(expected[1])||!celulaVazia_(expected[2])){
+      const row=grid[idx],white=normalizarNome_(row[0]),black=normalizarNome_(row[3]);
+      if(filtro && (white!==filtro.white||black!==filtro.black))continue;
+      if(!white||!black||white===black||/^rodada\s+\d+$/.test(white)||
+          normalizarNome_(row[4])==='bye')continue;
+      if(!celulaVazia_(row[5]) || estaProtegidoManualmente_(protecoes,idx+1,'F')){
         resumo.ignorados++;continue;
       }
-      const white=normalizarNome_(expected[0]),black=normalizarNome_(expected[3]);
-      if(filtro && (white!==filtro.white||black!==filtro.black))continue;
-      if(!white||!black||white===black||/^rodada\s+\d+$/.test(white)||white==='bye'||black==='bye')continue;
-      resumo.linhasAnalisadas++;
-      const rowNumber=idx+1;
+      // Preenchimentos incompletos, corrigidos à mão, não podem ser inferidos.
+      if(celulaVazia_(row[1])!==celulaVazia_(row[2])){
+        resumo.ignorados++;continue;
+      }
       const w=nicks[white],b=nicks[black];
       if(!w||!b||w===b||duplicates.has(w)||duplicates.has(b))continue;
-      // Se a mesma dupla e cores aparecem duas vezes nesta edição, vínculo ambíguo.
-      const occurrences=grid.filter(row=>normalizarNome_(row[0])===white && normalizarNome_(row[3])===black).length;
+      const occurrences=grid.filter(r=>normalizarNome_(r[0])===white &&
+        normalizarNome_(r[3])===black).length;
       if(occurrences!==1){resumo.ambiguos++;continue;}
-      if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA)break;
-      const games=[];
-      let complete=true,retornoPorPerfil=[];
+      pendentes.push({idx,rowNumber:idx+1,key:keys[idx],white,black,w,b});
+    }
+    resumo.pendentes=pendentes.length;
+    const props=env.props;
+    // Cursor persistente: em cada acionamento, verificar os próximos pares,
+    // inclusive os antigos, os finalizados manualmente e rodadas futuras.
+    let ordered=pendentes;
+    if(automatica && !filtro && pendentes.length) {
+      const previous=props.getProperty(REINOS_CONFIG.CURSOR_DESCOBERTA);
+      resumo.cursorAnterior=previous||null;
+      let next=pendentes.findIndex(x=>x.key+'#'+x.rowNumber===previous)+1;
+      if(!previous || next===0){
+        const oldRow=Number((previous||'').split('#').pop());
+        next=Number.isInteger(oldRow)&&oldRow>0?
+          Math.max(0,pendentes.findIndex(x=>x.rowNumber>oldRow)):0;
+      }
+      next%=pendentes.length;
+      ordered=pendentes.slice(next).concat(pendentes.slice(0,next));
+    }
+    let consultaConta=null;
+    // Cursor só avança após duas respostas válidas para a mesma dupla;
+    // candidaturas incertas jamais são gravadas.
+    for(const pending of ordered){
+      if(resumo.consultas+2>REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA)break;
+      const {idx,rowNumber,white,black,w,b,key}=pending;
+      const expected=Array.from({length:8},(_,i)=>grid[idx][i]===undefined?'':grid[idx][i]);
+      resumo.linhasAnalisadas++;
+      const games=[],returned=[];
       console.log('Reinos: verificando linha '+rowNumber+' ('+expected[0]+' x '+expected[3]+')');
+      let complete=true;
       for(const [nick,opponent] of [[w,b],[b,w]]){
-        if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA)break;
-        const lookup=jogosPublicosPorDupla_(nick,opponent,desde);
+        const response=jogosPublicosPorDupla_(nick,opponent);
         resumo.consultas++;
-        if(lookup.status===429){resumo.erros++;console.log('Reinos: HTTP 429, busca interrompida.');return resumo;}
-        if(lookup.status!==200){
-          resumo.erros++;complete=false;
-          console.log('Reinos: linha '+rowNumber+' consulta indisponível HTTP '+lookup.status);
-          continue;
+        if(response.status===403||response.status===429||response.status===401){
+          resumo.erros++;resumo.interrompida=true;
+          console.log('Reinos: API bloqueou consulta HTTP '+response.status+
+            '; interrompendo todas as novas requisições.');
+          if(automatica && escrever)props.setProperty(REINOS_CONFIG.PAUSA_DESCOBERTA,
+            String(Date.now()+((response.status===429)?3600000:1800000)));
+          return resumo;
         }
-        retornoPorPerfil.push(nick+': '+lookup.jogos.length);
-        games.push(...lookup.jogos);
+        if(response.status!==200){
+          resumo.erros++;complete=false;
+          console.log('Reinos: consulta indisponível HTTP '+response.status+
+            ' para linha '+rowNumber+'; não vincular.');
+          break;
+        }
+        returned.push(nick+': '+response.jogos.length);
+        games.push(...response.jogos);
         Utilities.sleep(REINOS_CONFIG.PAUSA_MS);
       }
-      console.log('Reinos: linha '+rowNumber+' jogos por perfil: '+retornoPorPerfil.join(' / '));
+      if(!complete){
+        resumo.consultaParcial=true;
+        // Não consolidar elegibilidade e resultados sob falha de rede.
+        resumo.interrompida=true;
+        return resumo;
+      }
+      console.log('Reinos: linha '+rowNumber+' jogos por perfil: '+returned.join(' / '));
       resumo.jogosRetornados+=games.length;
-      if(!complete){resumo.ignorados++;continue;}
-      if(!games.length){
+      if(!games.length) {
         resumo.semJogos++;
         console.log('Reinos: linha '+rowNumber+': nenhum jogo retornado na busca por dupla.');
-        // OAuth da planilha é separado do login opcional do site. Não exigir token
-        // para o fluxo público, mas usar dados próprios se já houver autorização.
-        if(consultaConta===null){
+        // Opcional, só para jogador dono do token; pode retornar partidas
+        // ainda não disponibilizadas na exportação pública.
+        if(consultaConta===null) {
           const participantes=Object.values(nicks).filter(Boolean);
-          consultaConta=obterJogosAtivosAutenticados_(token,participantes);
+          consultaConta=obterJogosAtivosAutenticados_(props.getProperty('LICHESS_API_TOKEN'),participantes);
           resumo.consultasConta+=consultaConta.status==='ok'?2:1;
           resumo.jogosAtivosConta=consultaConta.jogos.length;
         }
         if(consultaConta.status==='ok'&&(consultaConta.owner===w||consultaConta.owner===b)){
-          const adversario=consultaConta.owner===w?b:w;
           const cor=consultaConta.owner===w?'white':'black';
-          const identificados=consultaConta.jogos.filter(j=>j.opponentId===adversario &&
-            j.color===cor && j.perf==='correspondence');
-          resumo.jogosDaDuplaNaConta+=identificados.length;
-          console.log('Reinos: linha '+rowNumber+': conta autenticada confirmou '+
-            identificados.length+' jogo(s) ativo(s) com adversário e cor corretos.');
-          for(const candidato of identificados){
+          const outro=consultaConta.owner===w?b:w;
+          for(const candidato of consultaConta.jogos.filter(j=>j.opponentId===outro &&
+            j.color===cor && j.perf==='correspondence')){
             if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA)break;
+            resumo.jogosDaDuplaNaConta++;
             resumo.consultas++;
-            const info=consultarPartida_(candidato.gameId,token);
-            if(info&&info.game){
-              games.push(info.game);
-            }else{
-              console.log('Reinos: linha '+rowNumber+': jogo ativo ID '+candidato.gameId+
-                ' identificado na conta, mas exportação não confirmou os metadados. Não vincular.');
+            const lookup=consultarPartida_(candidato.gameId,props.getProperty('LICHESS_API_TOKEN'));
+            if(lookup.httpStatus===429||lookup.httpStatus===403){
+              resumo.erros++;resumo.interrompida=true;return resumo;
             }
+            if(lookup.game)games.push(lookup.game);
           }
-        } else if (filtro) {
-          console.log('Reinos: fallback autenticado: '+consultaConta.status+
-            ' (token não habilita consulta de partidas deste confronto).');
         }
-        if(!games.length)continue;
       }
-      const validos={},inconclusivos={};
-      const idsAvaliados=new Set();
-      for(const listaGame of games){
-        if(!listaGame || !/^[a-zA-Z0-9]{8}$/.test(String(listaGame.id||'')))continue;
-        const gid=listaGame.id.toLowerCase();
-        if(idsAvaliados.has(gid))continue;
-        idsAvaliados.add(gid);
-        // Confirmar identidade antes de consultar mais dados, sem abrir partidas alheias.
-        if(idJogadorLichess_(listaGame.players&&listaGame.players.white)!==w ||
-           idJogadorLichess_(listaGame.players&&listaGame.players.black)!==b){
+      const validos={},inconclusivos={},evaluated=new Set();
+      for(const listed of games) {
+        if(!listed||!/^[A-Za-z0-9]{8}$/.test(String(listed.id||'')))continue;
+        const gid=listed.id.toLowerCase();
+        if(evaluated.has(gid))continue;
+        evaluated.add(gid);
+        if(idJogadorLichess_(listed.players&&listed.players.white)!==w ||
+           idJogadorLichess_(listed.players&&listed.players.black)!==b){
           resumo.descartadosPorCores++;continue;
         }
         resumo.jogosDaDupla++;
-        if(String(listaGame.perf||listaGame.speed||'').toLowerCase()!=='correspondence'){
+        if(String(listed.perf||listed.speed||'').toLowerCase()!=='correspondence'){
           resumo.descartadosPorModalidade++;continue;
         }
-        if(!Number.isFinite(listaGame.createdAt)||listaGame.createdAt<desde||
-           listaGame.createdAt>Date.now()+120000){
-          resumo.descartadosPorData++;continue;
-        }
-        if(['created','nostart','aborted'].includes(String(listaGame.status||'').toLowerCase()))continue;
+        if(!Number.isFinite(listed.createdAt)||listed.createdAt<desde ||
+           listed.createdAt>Date.now()+120000){resumo.descartadosPorData++;continue;}
+        if(['created','nostart','aborted'].includes(String(listed.status||'').toLowerCase()))continue;
         if(ids[gid]||vistos[gid])continue;
-        let game=listaGame;
+        let game=listed;
         if(game.daysPerTurn===undefined||game.daysPerTurn===null){
           if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA){
             inconclusivos[gid]=game;resumo.prazoNaoConfirmado++;continue;
           }
           resumo.consultas++;resumo.consultasDetalhes++;
-          const detail=consultarDetalhesPublicos_(game.id);
-          if(detail && idJogadorLichess_(detail.players&&detail.players.white)===w &&
-             idJogadorLichess_(detail.players&&detail.players.black)===b){
-            game=detail;
-          }
+          const details=consultarDetalhesPublicos_(game.id);
+          if(details&&idJogadorLichess_(details.players&&details.players.white)===w&&
+             idJogadorLichess_(details.players&&details.players.black)===b)game=details;
           Utilities.sleep(REINOS_CONFIG.PAUSA_MS);
         }
         if(game.daysPerTurn!==1){
           if(game.daysPerTurn===undefined||game.daysPerTurn===null){
-            resumo.prazoNaoConfirmado++;
-            inconclusivos[gid]=game;
-          }else{
-            resumo.descartadosPorModalidade++;
-          }
+            inconclusivos[gid]=game;resumo.prazoNaoConfirmado++;
+          }else resumo.descartadosPorModalidade++;
           continue;
         }
         if(!partidaElegivelVinculo_(game,w,b,desde))continue;
-        const start=expected[6];
-        if(start instanceof Date && Math.abs(start.getTime()-game.createdAt)>6*86400000){
+        if(expected[6] instanceof Date &&
+           Math.abs(expected[6].getTime()-game.createdAt)>6*86400000){
           resumo.descartadosPorData++;continue;
         }
-        resumo.jogosConfirmados++;
-        validos[gid]=game;
+        // Se organizador lançou placar antes de inserir URL, só reconhecer
+        // jogo finalizado que confirme ambos os pontos exatamente.
+        const manualPlacar=!celulaVazia_(expected[1])||!celulaVazia_(expected[2]);
+        if(manualPlacar){
+          const result=placarLichess_(game);
+          if(result===null||!valoresIguais_(expected[1],result[0])||
+             !valoresIguais_(expected[2],result[1]))continue;
+        }
+        resumo.jogosConfirmados++;validos[gid]=game;
       }
-      const choices=Object.values(validos);
-      const suspeitos=Object.values(inconclusivos);
-      if(suspeitos.length){
-        console.log('Reinos: linha '+rowNumber+': '+suspeitos.length+
-          ' jogo(s) da dupla com prazo não confirmado pela API. Não vincular automaticamente.');
+      const choices=Object.values(validos),suspeitos=Object.values(inconclusivos);
+      if(suspeitos.length)console.log('Reinos: linha '+rowNumber+
+        ': metadados inconclusivos em '+suspeitos.length+' jogo(s); não vincular.');
+      if(choices.length===1&&!suspeitos.length) {
+        const game=choices[0],gid=game.id.toLowerCase();
+        resumo.candidatos++;vistos[gid]=true;
+        console.log('Reinos: possível vínculo linha '+rowNumber+' ID '+game.id+
+          (escrever?'':' [SIMULAÇÃO]'));
+        if(escrever&&!estaProtegidoManualmente_(protecoes,rowNumber,'F')&&
+           gravarVinculoSeInalterado_(sheet,rowNumber,expected,game,env.spreadsheet)){
+          ids[gid]=1;resumo.aplicados++;
+        }
+      } else if(choices.length>1 || (choices.length&&suspeitos.length)){
+        resumo.ambiguos++;
       }
-      if(choices.length!==1 || suspeitos.length){
-        if(choices.length>1 || (choices.length && suspeitos.length))resumo.ambiguos++;
-        if(choices.length===0 && !suspeitos.length)console.log('Reinos: linha '+rowNumber+': nenhum jogo passou pelos critérios.');
-        continue;
-      }
-      const game=choices[0],gid=game.id.toLowerCase();
-      if(!Number.isFinite(game.createdAt))continue;
-      // Conferência de data já realizada antes da seleção da candidata.
-      resumo.candidatos++;vistos[gid]=true;
-      console.log('Reinos: possível vínculo linha '+rowNumber+' ID '+game.id+
-         (escrever?'':' [SIMULAÇÃO]'));
-      if(escrever&&gravarVinculoSeInalterado_(sheet,idx+1,expected,game,env.spreadsheet)){
-        ids[gid]=1;resumo.aplicados++;
+      // Avançar mesmo sem jogos, para não repetir os primeiros confrontos.
+      // Um cursor pós-linha é armazenado somente no modo automático com escrita.
+      if(automatica && escrever) {
+        props.setProperty(REINOS_CONFIG.CURSOR_DESCOBERTA,(key||'')+'#'+rowNumber);
+        resumo.cursorNovo=(key||'')+'#'+rowNumber;
       }
     }
     console.log('Reinos: descoberta '+JSON.stringify(resumo));
@@ -840,7 +912,8 @@ function rodadaReferencia_(spreadsheet) {
  * rodada anterior antes da seguinte em empate, linha da planilha.
  * "Aguardando início" não ocupa jogador: só a seleção o reserva.
  */
-function propostasElegibilidade_(rows,referencia,finaisVerificados) {
+function propostasElegibilidade_(rows,referencia,finaisVerificados,protecoes) {
+  protecoes=protecoes||{};
   const ocupados=new Set();
   const confrontos=[];
   let rodada=0;
@@ -858,6 +931,9 @@ function propostasElegibilidade_(rows,referencia,finaisVerificados) {
     const temLink=!celulaVazia_(r[5]);
     const parcial=!celulaVazia_(r[1])||!celulaVazia_(r[2]);
     const estado=normalizarNome_(r[4]);
+    if (estaProtegidoManualmente_(protecoes,i+1,'E') && estado==='aguardando inicio') {
+      ocupados.add(white);ocupados.add(black);
+    }
     // O link e/ou estado em andamento significam ocupação até que
     // resultado conferido prove a liberação. Finalizado sem placar é
     // inconclusivo e também bloqueia um segundo jogo.
@@ -888,7 +964,7 @@ function propostasElegibilidade_(rows,referencia,finaisVerificados) {
   const propostas=[];
   for(const m of confrontos) {
     if(!['jogador em outra partida','aguardando inicio'].includes(m.estado))continue;
-    if(m.final||m.temLink||m.parcial)continue;
+    if(m.final||m.temLink||m.parcial||estaProtegidoManualmente_(protecoes,m.row,'E'))continue;
     const novo=escolhidas.has(m.row)?'Aguardando início':'Jogador em outra partida';
     if(nomeNormalizado_(m.raw[4])!==novo)propostas.push({row:m.row,original:m.raw,novo});
   }
@@ -920,8 +996,8 @@ function gravarElegibilidadeSeInalterada_(sheet,proposal,referencia,spreadsheet)
   }catch(error){console.error('Reinos: elegibilidade gravada, mas auditoria falhou na linha '+proposal.row);}
   return true;
 }
-function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,resumo,finaisVerificados) {
-  const propostas=propostasElegibilidade_(rows,referencia,finaisVerificados);
+function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,resumo,finaisVerificados,protecoes) {
+  const propostas=propostasElegibilidade_(rows,referencia,finaisVerificados,protecoes);
   for(const proposta of propostas){
     resumo.aguardandoCandidatos++;
     console.log('Reinos: linha '+proposta.row+': E='+proposta.novo+
@@ -930,7 +1006,7 @@ function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,re
     // Antes de qualquer escrita, refazer a elegibilidade contra a grade
     // atual (inclusive linhas que o organizador tenha modificado).
     const agora=sheet.getDataRange().getValues();
-    const ainda=propostasElegibilidade_(agora,referencia,{})
+    const ainda=propostasElegibilidade_(agora,referencia,{},protecoes)
       .some(p=>p.row===proposta.row&&p.novo===proposta.novo);
     if(!ainda||!gravarElegibilidadeSeInalterada_(sheet,proposta,referencia,spreadsheet)){
       resumo.aguardandoConflitos++;continue;
@@ -938,4 +1014,69 @@ function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,re
     if(proposta.novo==='Aguardando início')resumo.aguardandoAplicados++;
     else resumo.aguardandoRevertidos++;
   }
+}
+
+/** Identidade estável da linha: rodada + nomes/cor. A numeração da linha
+ * pode mudar sem liberar uma correção humana previamente protegida. */
+function chavesConfrontos_(grid) {
+  let rodada=0;
+  return grid.map(row=>{
+    const branco=normalizarNome_(row[0]),preto=normalizarNome_(row[3]);
+    const header=/^rodada\s+(\d+)$/i.exec(nomeNormalizado_(row[0]));
+    if(header){rodada=Number(header[1]);return null;}
+    if(!rodada || !branco || !preto || branco===preto)return null;
+    return rodada+'|'+branco+'|'+preto;
+  });
+}
+/** Guarda local das colunas corrigidas pelo organizador.
+ * Nunca é criada por simulações; permanece até remoção manual do registro.
+ * Marcadores são criados por onEdit (edições de usuário na interface). */
+function lerProtecoesManuais_(spreadsheet,grid) {
+  const control=spreadsheet.getSheetByName(REINOS_CONFIG.ABA_CONTROLE_MANUAL);
+  if(!control)return {};
+  const lines=control.getDataRange().getValues();
+  const byKey={};
+  for(let i=1;i<lines.length;i++){
+    const key=String(lines[i][1]||''),col=String(lines[i][2]||'');
+    if(!key||!['B','C','E','F','G','H'].includes(col))continue;
+    if(!byKey[key])byKey[key]=new Set();
+    byKey[key].add(col);
+  }
+  const result={},keys=chavesConfrontos_(grid);
+  keys.forEach((key,i)=>{if(key&&byKey[key])result[i+1]=byKey[key];});
+  return result;
+}
+function estaProtegidoManualmente_(protecoes,rowNumber,coluna) {
+  return !!(protecoes && protecoes[rowNumber] && protecoes[rowNumber].has(coluna));
+}
+/** Trigger simples: só edições humanas disparam onEdit. Escritas do próprio
+ * Apps Script e recálculos de fórmulas não disparam este evento.
+ * Em uma nova instalação, alterações anteriores não são retroativas. */
+function onEdit(e) {
+  if(!e || !e.range || !e.source)return;
+  const sheet=e.range.getSheet();
+  if(!sheet || sheet.getName()!==REINOS_CONFIG.ABA_CONFRONTOS)return;
+  const firstCol=e.range.getColumn(),lastCol=firstCol+e.range.getNumColumns()-1;
+  if(lastCol<2 || firstCol>8)return;
+  const cols=['B','C','E','F','G','H'];
+  const selected=[];
+  for(let c=Math.max(2,firstCol);c<=Math.min(8,lastCol);c++){
+    const label='ABCDEFGH'[c-1];
+    if(cols.includes(label))selected.push(label);
+  }
+  if(!selected.length)return;
+  const rows=sheet.getDataRange().getValues();
+  const keys=chavesConfrontos_(rows);
+  let control=e.source.getSheetByName(REINOS_CONFIG.ABA_CONTROLE_MANUAL);
+  const records=[];
+  for(let row=e.range.getRow();row<e.range.getRow()+e.range.getNumRows();row++){
+    if(!keys[row-1])continue;
+    for(const col of selected)records.push([new Date().toISOString(),keys[row-1],col,row]);
+  }
+  if(!records.length)return;
+  if(!control){
+    control=e.source.insertSheet(REINOS_CONFIG.ABA_CONTROLE_MANUAL);
+    control.appendRow(['UTC','Rodada | brancas | pretas','Coluna protegida','Linha na edição']);
+  }
+  for(const record of records)control.appendRow(record);
 }

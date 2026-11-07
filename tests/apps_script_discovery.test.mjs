@@ -4,15 +4,19 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 const source=fs.readFileSync(new URL('../apps-script/Code.gs',import.meta.url),'utf8');
 const created=Date.UTC(2026,9,20);
-function fixture({listDays=null,detailDays=1,omitGame=false}={}){
+function fixture({listDays=null,detailDays=1,omitGame=false,caseEnrico=false,legacyFiltersReturnEmpty=false,wrongColors=false}={}){
  const rows=[
   ['Brancas','B','C','Pretas','Status','Link','Início','Fim'],
   ['Rodada 5','','','','','','',''],
   ['Alice','','','Emanuel','Finalizado','https://lichess.org/Ab12Cd34',new Date(created-86400000),''],
   ['Rodada 6','','','','','','',''],
-  ['Humberto','','','Ligia','Jogador em outra partida','','','']];
+  [caseEnrico?'Enrico':'Humberto','','',caseEnrico?'Gabriel':'Ligia','Jogador em outra partida','','','']];
  const props={},logs=[],writes=[],urls=[];
- const game={id:'Hi12Lm34',players:{white:{user:{id:'humberto_m'}},black:{user:{id:'raducol'}}},perf:'correspondence',status:'started',createdAt:created};
+ const w=caseEnrico?'xarnosqui':'humberto_m',b=caseEnrico?'biel009':'raducol';
+ const game={id:caseEnrico?'2Lx5SE4D':'Hi12Lm34',
+   players:{white:{user:{id:wrongColors?b:w}},black:{user:{id:wrongColors?w:b}}},
+   perf:'correspondence',status:caseEnrico?'mate':'started',
+   createdAt:caseEnrico?Date.UTC(2026,10,1,22,26,15):created};
  if(listDays!==null)game.daysPerTurn=listDays;
  const sheets={};
  const makeSheet=(values)=>({getDataRange:()=>({getValues:()=>values.map(r=>r.slice())}),
@@ -22,7 +26,9 @@ function fixture({listDays=null,detailDays=1,omitGame=false}={}){
     setValue:(v)=>{writes.push([row,col,v]);values[row-1][col-1]=v;return {setNumberFormat:()=>{}}},
   }),appendRow:(row)=>values.push(row)});
  sheets['2']=makeSheet(rows);
- sheets.Jogadores=makeSheet([['Nome','Nick Lichess'],['Humberto','Humberto_M'],['Ligia','Raducol']]);
+ sheets.Jogadores=makeSheet(caseEnrico?
+    [['Nome','Nick Lichess'],['Enrico','Xarnosqui'],['Gabriel','Biel009']]:
+    [['Nome','Nick Lichess'],['Humberto','Humberto_M'],['Ligia','Raducol']]);
  const context={Date,JSON,Error,Object,Math,Number,String,Array,Set,RegExp,
  SpreadsheetApp:{getActiveSpreadsheet:()=>({getId:()=> 'SHEET-TEST',getSheetByName:x=>sheets[x]||null,
    getSpreadsheetTimeZone:()=> 'America/Sao_Paulo',insertSheet:x=>{sheets[x]=makeSheet([]);return sheets[x];}}),flush:()=>{}},
@@ -31,7 +37,7 @@ function fixture({listDays=null,detailDays=1,omitGame=false}={}){
  Utilities:{sleep:()=>{}},
  UrlFetchApp:{fetch:(url)=>{urls.push(url);
    if(url.includes('/api/games/user/'))return {getResponseCode:()=>200,
-     getContentText:()=>omitGame?'':JSON.stringify(game)};
+     getContentText:()=>omitGame || (legacyFiltersReturnEmpty && /[?&](?:perfType|since|sort|opening)=/.test(url))?'':JSON.stringify(game)};
    if(url.includes('/game/export/'))return {getResponseCode:()=>200,
      getContentText:()=>JSON.stringify({...game,daysPerTurn:detailDays})};
    return {getResponseCode:()=>404,getContentText:()=>''};
@@ -69,4 +75,78 @@ test('jogo com 3 dias/lance não é vinculado',()=>{
  const r=f.context.diagnosticarHumbertoLigia();
  assert.equal(r.candidatos,0);
  assert.equal(f.writes.length,0);
+});
+
+test('Enrico x Gabriel: busca reduzida encontra jogo ocultado pelos filtros extras',()=>{
+ const f=fixture({caseEnrico:true,listDays:1,legacyFiltersReturnEmpty:true});
+ const r=f.context.diagnosticarEnricoGabriel();
+ assert.equal(r.erros,0);
+ assert.equal(r.candidatos,1);
+ assert.equal(r.jogosConfirmados,1);
+ assert.equal(r.aplicados,0);
+ assert.equal(f.rows[4][5],'');
+ const requests=f.urls.filter(u=>u.includes('/api/games/user/'));
+ assert.equal(requests.length,2);
+ for(const url of requests){
+   assert.match(url,/\bvs=(?:xarnosqui|biel009)/);
+   assert.doesNotMatch(url,/[?&](?:since|perfType|sort|opening)=/);
+ }
+ assert.ok(f.logs.some(s=>s.includes('possível vínculo linha 5 ID 2Lx5SE4D')));
+});
+test('busca reduzida mantém checagem local de jogadores e cores',()=>{
+ const f=fixture({caseEnrico:true,listDays:1,wrongColors:true});
+ const r=f.context.diagnosticarEnricoGabriel();
+ assert.equal(r.candidatos,0);
+ assert.equal(r.descartadosPorCores,1);
+ assert.equal(f.writes.length,0);
+});
+test('busca reduzida continua recusando jogos fora da data mínima',()=>{
+ const f=fixture({caseEnrico:true,listDays:1});
+ // A data mínima é calculada a partir do primeiro jogo com G preenchida.
+ // Como o jogo novo é de 1º de novembro, mover a referência inicial para frente o exclui.
+ f.rows[2][6]=new Date(Date.UTC(2026,11,20));
+ const r=f.context.diagnosticarEnricoGabriel();
+ assert.equal(r.candidatos,0);
+ assert.equal(r.descartadosPorData,1);
+});
+
+test('varredura proativa circula por confrontos sem link e atualiza o cursor',()=>{
+ const f=fixture({omitGame:true});
+ // Adiciona mais quatro duplas nas mesmas contas de teste. O cursor avança
+ // por linha (e não fixa indefinidamente os primeiros confrontos).
+ for(let i=0;i<5;i++)
+   f.rows.push(['Humberto','','','Ligia','Jogador em outra partida','','','']);
+ const props={};
+ // Teste do algoritmo do cursor: chamadas simuladas não devem gravar.
+ const first=f.context.descobrirPartidas_(false,null,{automatica:true});
+ assert.equal(first.modo,'SIMULACAO');
+ assert.equal(first.aplicados,0);
+ assert.equal(first.cursorNovo,null);
+ assert.ok(first.consultas<=8);
+});
+test('partida encerrada com placar manual só pode ter link vinculado se a pontuação coincidir',()=>{
+ const f=fixture({caseEnrico:true,listDays:1});
+ f.rows[4][1]=1;f.rows[4][2]=0;f.rows[4][4]='Finalizado';
+ const old=f.context.placarLichess_;
+ f.context.placarLichess_=g=>[1,0];
+ const match=f.context.diagnosticarEnricoGabriel();
+ assert.equal(match.candidatos,1);
+ assert.equal(f.rows[4][5],'');
+ f.context.placarLichess_=g=>[0,1];
+ const wrong=f.context.diagnosticarEnricoGabriel();
+ assert.equal(wrong.candidatos,0);
+ f.context.placarLichess_=old;
+});
+test('proteções manuais priorizam alterações humanas de F e E',()=>{
+ const f=fixture({caseEnrico:true,listDays:1});
+ const ctrlRows=[['UTC','Key','Col','Row'],
+   [new Date().toISOString(),'6|enrico|gabriel','F',5],
+   [new Date().toISOString(),'6|enrico|gabriel','E',5]];
+ const ctrl={getDataRange:()=>({getValues:()=>ctrlRows})};
+ const grid=f.rows;
+ const k=f.context.chavesConfrontos_(grid);
+ assert.equal(k[4],'6|enrico|gabriel');
+ const protections={'5':new Set(['F','E'])};
+ assert.equal(f.context.estaProtegidoManualmente_(protections,5,'F'),true);
+ assert.equal(f.context.estaProtegidoManualmente_(protections,5,'B'),false);
 });

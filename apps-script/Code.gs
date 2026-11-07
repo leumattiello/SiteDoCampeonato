@@ -22,10 +22,13 @@ const REINOS_CONFIG = Object.freeze({
   ABA_AUDITORIA_DATAS: '_AuditoriaDatasLichess',
   ABA_AUDITORIA_VINCULOS: '_AuditoriaVinculosLichess',
   ABA_AUDITORIA_STATUS: '_AuditoriaStatusLichess',
+  ABA_CONTROLE_MANUAL: '_ControleManualLichess',
   ID_PLANILHA_ORIGINAL: '1YlGQwfYdT_J633frIN_wPiW3ExYqjC1gcum2xi1KwGc',
   MAX_CONSULTAS: 80,
   MAX_CONSULTAS_DESCOBERTA: 8,
-  PAUSA_MS: 400
+  PAUSA_MS: 1100,
+  CURSOR_DESCOBERTA: 'DESCOBERTA_ULTIMO_CONFRONTO_V1',
+  PAUSA_DESCOBERTA: 'DESCOBERTA_PAUSA_ATE_V1'
 });
 
 /** Simulação, sem modificar NENHUMA célula (nem cria a aba de auditoria). */
@@ -43,11 +46,20 @@ function sincronizarAutomaticamente() {
   const props = PropertiesService.getScriptProperties();
   const habilitado = props.getProperty('EXECUCAO_AUTOMATICA_HABILITADA') === 'SIM';
   console.log('Reinos: execução automática ' + (habilitado ? 'habilitada' : 'em simulação'));
-  // A descoberta automática não foi homologada: evita dezenas de chamadas
-  // repetidas e quaisquer gravações de vínculos sem fonte confiável.
-  // simularDescoberta continua disponível manualmente para diagnóstico.
+  // Sempre descobrir ANTES de conciliar resultados/status/datas, para
+  // integrar vínculos recém-confirmados na mesma execução.
+  const pausaAte = Number(props.getProperty(REINOS_CONFIG.PAUSA_DESCOBERTA) || 0);
+  if (Date.now() < pausaAte) {
+    console.log('Reinos: Lichess em pausa após resposta de proteção; sem novas requisições.');
+    return {descoberta:{status:'em_pausa'}, consolidacao:{status:'adiada'}};
+  }
+  const descoberta = descobrirPartidas_(habilitado, null, {automatica:true});
+  if (descoberta.interrompida) {
+    console.log('Reinos: consolidação adiada para evitar consultas após erro da API.');
+    return {descoberta:descoberta, consolidacao:{status:'adiada'}};
+  }
   const consolidacao = executarSincronizacao_(habilitado);
-  return Object.assign({}, consolidacao, {descoberta: {status:'desabilitada',motivo:'pendente de homologação'}});
+  return Object.assign({}, consolidacao, {descoberta:descoberta});
 }
 
 /**
@@ -87,6 +99,7 @@ function executarSincronizacao_(solicitouEscrita) {
     const jogadoresSheet = env.spreadsheet.getSheetByName(REINOS_CONFIG.ABA_JOGADORES);
     if (!jogosSheet || !jogadoresSheet) throw new Error('Faltam as abas 2 e/ou Jogadores.');
     const grid = jogosSheet.getDataRange().getValues();
+    const protecoes = lerProtecoesManuais_(env.spreadsheet,grid);
     const nicks = mapaJogadores_(jogadoresSheet.getDataRange().getValues());
     const indices = contarIdsJogo_(grid);
     const token = env.props.getProperty('LICHESS_API_TOKEN');
@@ -172,6 +185,7 @@ function executarSincronizacao_(solicitouEscrita) {
       // liberam os jogadores mesmo que o resultado ainda não tenha sido gravado.
       if (result !== null && !conflitoResultado) finaisVerificados[rowNumber] = true;
       const podeMudarStatus = statusProposto &&
+        !estaProtegidoManualmente_(protecoes,rowNumber,'E') &&
         !(statusProposto === 'Em andamento' && normalizarNome_(expected[4]).toLowerCase() === 'finalizado') &&
         (statusProposto === 'Finalizado'
           ? !conflitoResultado
@@ -183,11 +197,14 @@ function executarSincronizacao_(solicitouEscrita) {
       }
       const datas = datasLichess_(game, result !== null);
       const faltamDatas = {
-        inicio: celulaVazia_(expected[6]) && !!datas.inicio,
-        fim: celulaVazia_(expected[7]) && !!datas.fim
+        inicio: celulaVazia_(expected[6]) && !!datas.inicio &&
+          !estaProtegidoManualmente_(protecoes,rowNumber,'G'),
+        fim: celulaVazia_(expected[7]) && !!datas.fim &&
+          !estaProtegidoManualmente_(protecoes,rowNumber,'H')
       };
       const dadosDatas = faltamDatas.inicio || faltamDatas.fim;
-      const faltaPlacar = result !== null && celulaVazia_(expected[1]) && celulaVazia_(expected[2]);
+      const faltaPlacar = result !== null && celulaVazia_(expected[1]) && celulaVazia_(expected[2]) &&
+        !['B','C','E'].some(col=>estaProtegidoManualmente_(protecoes,rowNumber,col));
 
       // Datas digitadas pelo organizador não são substituídas. Divergências
       // são registradas para conferência, nunca corrigidas automaticamente.
@@ -252,7 +269,7 @@ function executarSincronizacao_(solicitouEscrita) {
       } else {
         const atual = solicitouEscrita ? jogosSheet.getDataRange().getValues() : grid;
         sincronizarElegibilidade_(jogosSheet,atual,rodadaRef,solicitouEscrita,
-          env.spreadsheet,resumo,solicitouEscrita ? {} : finaisVerificados);
+          env.spreadsheet,resumo,solicitouEscrita ? {} : finaisVerificados,protecoes);
       }
     } else resumo.elegibilidadeIgnorada = 'Consulta Lichess interrompida; recalcular na próxima execução';
     console.log('Reinos: resumo ' + JSON.stringify(resumo));
@@ -855,7 +872,8 @@ function rodadaReferencia_(spreadsheet) {
  * rodada anterior antes da seguinte em empate, linha da planilha.
  * "Aguardando início" não ocupa jogador: só a seleção o reserva.
  */
-function propostasElegibilidade_(rows,referencia,finaisVerificados) {
+function propostasElegibilidade_(rows,referencia,finaisVerificados,protecoes) {
+  protecoes=protecoes||{};
   const ocupados=new Set();
   const confrontos=[];
   let rodada=0;
@@ -873,6 +891,9 @@ function propostasElegibilidade_(rows,referencia,finaisVerificados) {
     const temLink=!celulaVazia_(r[5]);
     const parcial=!celulaVazia_(r[1])||!celulaVazia_(r[2]);
     const estado=normalizarNome_(r[4]);
+    if (estaProtegidoManualmente_(protecoes,i+1,'E') && estado==='aguardando inicio') {
+      ocupados.add(white);ocupados.add(black);
+    }
     // O link e/ou estado em andamento significam ocupação até que
     // resultado conferido prove a liberação. Finalizado sem placar é
     // inconclusivo e também bloqueia um segundo jogo.
@@ -903,7 +924,7 @@ function propostasElegibilidade_(rows,referencia,finaisVerificados) {
   const propostas=[];
   for(const m of confrontos) {
     if(!['jogador em outra partida','aguardando inicio'].includes(m.estado))continue;
-    if(m.final||m.temLink||m.parcial)continue;
+    if(m.final||m.temLink||m.parcial||estaProtegidoManualmente_(protecoes,m.row,'E'))continue;
     const novo=escolhidas.has(m.row)?'Aguardando início':'Jogador em outra partida';
     if(nomeNormalizado_(m.raw[4])!==novo)propostas.push({row:m.row,original:m.raw,novo});
   }
@@ -935,8 +956,8 @@ function gravarElegibilidadeSeInalterada_(sheet,proposal,referencia,spreadsheet)
   }catch(error){console.error('Reinos: elegibilidade gravada, mas auditoria falhou na linha '+proposal.row);}
   return true;
 }
-function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,resumo,finaisVerificados) {
-  const propostas=propostasElegibilidade_(rows,referencia,finaisVerificados);
+function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,resumo,finaisVerificados,protecoes) {
+  const propostas=propostasElegibilidade_(rows,referencia,finaisVerificados,protecoes);
   for(const proposta of propostas){
     resumo.aguardandoCandidatos++;
     console.log('Reinos: linha '+proposta.row+': E='+proposta.novo+
@@ -945,7 +966,7 @@ function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,re
     // Antes de qualquer escrita, refazer a elegibilidade contra a grade
     // atual (inclusive linhas que o organizador tenha modificado).
     const agora=sheet.getDataRange().getValues();
-    const ainda=propostasElegibilidade_(agora,referencia,{})
+    const ainda=propostasElegibilidade_(agora,referencia,{},protecoes)
       .some(p=>p.row===proposta.row&&p.novo===proposta.novo);
     if(!ainda||!gravarElegibilidadeSeInalterada_(sheet,proposta,referencia,spreadsheet)){
       resumo.aguardandoConflitos++;continue;
@@ -953,4 +974,69 @@ function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,re
     if(proposta.novo==='Aguardando início')resumo.aguardandoAplicados++;
     else resumo.aguardandoRevertidos++;
   }
+}
+
+/** Identidade estável da linha: rodada + nomes/cor. A numeração da linha
+ * pode mudar sem liberar uma correção humana previamente protegida. */
+function chavesConfrontos_(grid) {
+  let rodada=0;
+  return grid.map(row=>{
+    const branco=normalizarNome_(row[0]),preto=normalizarNome_(row[3]);
+    const header=/^rodada\s+(\d+)$/i.exec(nomeNormalizado_(row[0]));
+    if(header){rodada=Number(header[1]);return null;}
+    if(!rodada || !branco || !preto || branco===preto)return null;
+    return rodada+'|'+branco+'|'+preto;
+  });
+}
+/** Guarda local das colunas corrigidas pelo organizador.
+ * Nunca é criada por simulações; permanece até remoção manual do registro.
+ * Marcadores são criados por onEdit (edições de usuário na interface). */
+function lerProtecoesManuais_(spreadsheet,grid) {
+  const control=spreadsheet.getSheetByName(REINOS_CONFIG.ABA_CONTROLE_MANUAL);
+  if(!control)return {};
+  const lines=control.getDataRange().getValues();
+  const byKey={};
+  for(let i=1;i<lines.length;i++){
+    const key=String(lines[i][1]||''),col=String(lines[i][2]||'');
+    if(!key||!['B','C','E','F','G','H'].includes(col))continue;
+    if(!byKey[key])byKey[key]=new Set();
+    byKey[key].add(col);
+  }
+  const result={},keys=chavesConfrontos_(grid);
+  keys.forEach((key,i)=>{if(key&&byKey[key])result[i+1]=byKey[key];});
+  return result;
+}
+function estaProtegidoManualmente_(protecoes,rowNumber,coluna) {
+  return !!(protecoes && protecoes[rowNumber] && protecoes[rowNumber].has(coluna));
+}
+/** Trigger simples: só edições humanas disparam onEdit. Escritas do próprio
+ * Apps Script e recálculos de fórmulas não disparam este evento.
+ * Em uma nova instalação, alterações anteriores não são retroativas. */
+function onEdit(e) {
+  if(!e || !e.range || !e.source)return;
+  const sheet=e.range.getSheet();
+  if(!sheet || sheet.getName()!==REINOS_CONFIG.ABA_CONFRONTOS)return;
+  const firstCol=e.range.getColumn(),lastCol=firstCol+e.range.getNumColumns()-1;
+  if(lastCol<2 || firstCol>8)return;
+  const cols=['B','C','E','F','G','H'];
+  const selected=[];
+  for(let c=Math.max(2,firstCol);c<=Math.min(8,lastCol);c++){
+    const label='ABCDEFGH'[c-1];
+    if(cols.includes(label))selected.push(label);
+  }
+  if(!selected.length)return;
+  const rows=sheet.getDataRange().getValues();
+  const keys=chavesConfrontos_(rows);
+  let control=e.source.getSheetByName(REINOS_CONFIG.ABA_CONTROLE_MANUAL);
+  const records=[];
+  for(let row=e.range.getRow();row<e.range.getRow()+e.range.getNumRows();row++){
+    if(!keys[row-1])continue;
+    for(const col of selected)records.push([new Date().toISOString(),keys[row-1],col,row]);
+  }
+  if(!records.length)return;
+  if(!control){
+    control=e.source.insertSheet(REINOS_CONFIG.ABA_CONTROLE_MANUAL);
+    control.appendRow(['UTC','Rodada | brancas | pretas','Coluna protegida','Linha na edição']);
+  }
+  for(const record of records)control.appendRow(record);
 }

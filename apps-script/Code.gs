@@ -497,6 +497,16 @@ function aplicarDescoberta() { return descobrirPartidas_(true); }
 function diagnosticarHumbertoLigia() {
   return descobrirPartidas_(false, {white:'humberto',black:'ligia'});
 }
+/** Diagnóstico dirigido para a rodada 7: nenhuma gravação. */
+function diagnosticarEnricoGabriel() {
+  return descobrirPartidas_(false, {white:'enrico',black:'gabriel'});
+}
+/** Vincula APENAS Enrico x Gabriel após conferir único jogo compatível.
+ * Requer todas as autorizações já usadas por aplicarDescoberta().
+ */
+function aplicarDescobertaEnricoGabriel() {
+  return descobrirPartidas_(true, {white:'enrico',black:'gabriel'});
+}
 
 /** Consulta apenas metadados de uma partida pública para confirmar o prazo.
  * A listagem por usuário pode omitir daysPerTurn, mesmo em correspondência.
@@ -515,10 +525,15 @@ function consultarDetalhesPublicos_(gameId) {
   }catch(e){return null;}
 }
 
-function jogosPublicosPorDupla_(nick, adversario, desde) {
-  const params = ['max=80','perfType=correspondence','ongoing=true','finished=true',
-    'moves=false','clocks=false','evals=false','opening=false','sort=dateDesc',
-    'since='+encodeURIComponent(desde),'vs='+encodeURIComponent(adversario)].join('&');
+function jogosPublicosPorDupla_(nick, adversario) {
+  // Com filtros extras (perfType/since/sort), o endpoint retornou HTTP 200
+  // com zero jogos para um confronto público confirmado. Buscar somente
+  // pela dupla e aplicar as restrições de modalidade, data, estado, tempo
+  // por lance, jogadores e cores localmente em descobrirPartidas_.
+  // A consulta continua limitada a 80 registros, sem lances/relógios/avaliações.
+  const params = ['vs='+encodeURIComponent(adversario),'max=80',
+    'ongoing=true','finished=true','moves=false','clocks=false',
+    'evals=false'].join('&');
   const endpoint = 'https://lichess.org/api/games/user/'+encodeURIComponent(nick)+'?'+params;
   try {
     const response = UrlFetchApp.fetch(endpoint, {
@@ -652,7 +667,7 @@ function descobrirPartidas_(escrever, filtro) {
       console.log('Reinos: verificando linha '+rowNumber+' ('+expected[0]+' x '+expected[3]+')');
       for(const [nick,opponent] of [[w,b],[b,w]]){
         if(resumo.consultas>=REINOS_CONFIG.MAX_CONSULTAS_DESCOBERTA)break;
-        const lookup=jogosPublicosPorDupla_(nick,opponent,desde);
+        const lookup=jogosPublicosPorDupla_(nick,opponent);
         resumo.consultas++;
         if(lookup.status===429){resumo.erros++;console.log('Reinos: HTTP 429, busca interrompida.');return resumo;}
         if(lookup.status!==200){

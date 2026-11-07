@@ -49,3 +49,29 @@ Após **consultar os jogos vinculados, processar resultados, status e datas**, a
 - Em HTTP 429 ou interrupção da varredura, não atualiza elegibilidade nessa execução. Se a configuração de rodada estiver ausente/incorreta, não altera E.
 
 **Homologação:** usar primeiro `simularResultados()` numa cópia, conferir propostas `aguardandoCandidatos`; depois `aplicarResultados()` na cópia autorizada, conferir E e auditoria, repetir para idempotência e simular novo jogo em andamento para ver reversão. Merge GitHub não instala `Code.gs` automaticamente. O site usa seu próprio cálculo; a planilha passa a espelhar essa regra após o acionador.
+
+## Diagnóstico — exportação por dupla com filtros extras (Enrico x Gabriel)
+
+A edição oficial apresentou a partida pública `2Lx5SE4D` de Enrico (`Xarnosqui`,
+brancas) contra Gabriel (`Biel009`, pretas), em correspondência 1 dia/lance,
+iniciada em 1º/11/2026 e já encerrada. A consulta antiga da API de jogos por usuário
+retornava HTTP 200 com zero resultados quando incluía `perfType`, `since`,
+`sort` e `opening`; a consulta enxuta por adversário retornou o jogo dos dois lados.
+
+A busca agora solicita somente as partidas da dupla (`vs`) e omite lances,
+relógios e avaliações. **Todos os filtros de segurança continuam obrigatórios
+dentro de `descobrirPartidas_`**, incluindo os dois nicks, cores exatas,
+modalidade `correspondence`, `daysPerTurn=1`, janela de datas, estado
+iniciado/finalizado, exclusão de duplicados e vínculo único. Consultas
+continuam limitadas (8 por execução; 80 jogos por perfil).
+
+Para testar o caso sem consumir o limite nas partidas anteriores, execute
+`diagnosticarEnricoGabriel()` no Apps Script vinculado (simulação, sem escrita).
+Se retornar exatamente um candidato válido, execute
+`aplicarDescobertaEnricoGabriel()` com as autorizações de escrita já configuradas
+e confira F47 e `_AuditoriaVinculosLichess`. Em seguida, use
+`sincronizarAutomaticamente()` para conciliar o resultado, E, B/C e datas.
+
+**Importante:** a descoberta geral automática continua desabilitada;
+`sincronizarAutomaticamente()` não descobre partidas sem F. O merge no
+GitHub não instala automaticamente o Code.gs na planilha.

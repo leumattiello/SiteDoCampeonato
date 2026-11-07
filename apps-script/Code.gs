@@ -150,10 +150,13 @@ function executarSincronizacao_(solicitouEscrita) {
         Utilities.sleep(REINOS_CONFIG.PAUSA_MS);
       }
       const lookup = consultados[gameId];
-      if (lookup.httpStatus === 429) {
+      if ([401,403,429].includes(lookup.httpStatus)) {
         resumo.erros++;
-        console.log('Reinos: HTTP 429; consultas suspensas para respeitar limite do Lichess.');
+        console.log('Reinos: HTTP '+lookup.httpStatus+
+          '; consultas suspensas para respeitar proteção do Lichess.');
         consultaInterrompida = true;
+        if (solicitouEscrita)env.props.setProperty(REINOS_CONFIG.PAUSA_DESCOBERTA,
+          String(Date.now()+(lookup.httpStatus===429?3600000:1800000)));
         break;
       }
       if (lookup.error) {

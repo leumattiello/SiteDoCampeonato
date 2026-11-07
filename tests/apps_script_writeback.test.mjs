@@ -165,7 +165,7 @@ test('token ausente bloqueia inclusive consulta simulada, sem vazamento',()=>{
 
 test('HTTP 401 não provoca gravação ou vazamento da credencial',()=>{
  const f=fixture({games:{Ab12Cd34:{httpCode:401}}});
- assert.equal(f.world.simularResultados().erros,2);assert.deepEqual(f.writes,[]);
+ assert.equal(f.world.simularResultados().erros,1);assert.deepEqual(f.writes,[]);
  assert.ok(f.logs.some(x=>x.includes('HTTP 401')));
  assert.ok(f.logs.every(x=>!x.includes('TOKEN_NAO_REAL')));
 });

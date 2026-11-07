@@ -751,6 +751,7 @@ function descobrirPartidas_(escrever, filtro, opcoes) {
       resumo.jogosRetornados+=games.length;
       if(!games.length) {
         resumo.semJogos++;
+        console.log('Reinos: linha '+rowNumber+': nenhum jogo retornado na busca por dupla.');
         // Opcional, só para jogador dono do token; pode retornar partidas
         // ainda não disponibilizadas na exportação pública.
         if(consultaConta===null) {

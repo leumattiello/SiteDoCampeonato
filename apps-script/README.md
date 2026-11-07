@@ -75,3 +75,60 @@ e confira F47 e `_AuditoriaVinculosLichess`. Em seguida, use
 **Importante:** a descoberta geral automática continua desabilitada;
 `sincronizarAutomaticamente()` não descobre partidas sem F. O merge no
 GitHub não instala automaticamente o Code.gs na planilha.
+
+## Automação proativa — fase da melhoria #18 (PR #15)
+
+`sincronizarAutomaticamente()` passa a executar primeiro a **descoberta de confrontos
+com F vazia**, incluindo partidas já encerradas e com B/C preenchidos pelo
+organizador (o placar só é aceito quando coincide exatamente com a API).
+Depois chama a sincronização habitual de B/C, E, G/H e elegibilidade.
+A descoberta automática fica ativa **apenas quando**
+`EXECUCAO_AUTOMATICA_HABILITADA=SIM`, com as autorizações usuais de escrita.
+Sem autorização, simula e não muda células nem o cursor.
+
+Para abranger os confrontos sem link, o script preserva um cursor
+`DESCOBERTA_ULTIMO_CONFRONTO_V1` nas Propriedades do Script.
+Cada execução tenta aproximadamente quatro confrontos diferentes (até oito
+consultas públicas/consultas complementares); a próxima retoma do confronto
+seguinte. O cursor não avança quando uma consulta falha. A busca por adversário
+não usa os filtros que haviam ocultado Enrico × Gabriel e **revalida localmente**
+contas, cores, modalidade, prazo de 1 dia, janela temporal, ID único e placar
+pré-existente. Com API 401/403/429, interrompe o lote, sem insistência;
+bloqueios acionam pausa de 30 ou 60 minutos.
+
+### Precedência humana
+
+O simples gatilho `onEdit(e)` registra edições manuais nas colunas B, C, E, F,
+G e H da aba `2`, por confronto e coluna, em
+`_ControleManualLichess`. Edits do próprio Apps Script não acionam `onEdit`.
+As colunas registradas ficam permanentemente protegidas de alteração
+automática até que o organizador remova **o registro específico** na aba de
+controle. Uma alteração manual em F, inclusive sua remoção, impede
+redescoberta do link. Um placar já presente nunca é sobrescrito; se houver
+discordância com a API, o confronto não é vinculado.
+
+**Limitação importante:** o histórico de edições anteriores à instalação
+não é recuperável pelo gatilho. As células B/C/E/G/H preenchidas continuam
+preservadas pelo reconciliador; F preenchida jamais é substituída. Se o
+organizador apagar uma célula antes de ativar `onEdit`, a proteção não
+será retroativa. Evite usar o editor do Apps Script para alterar valores
+manualmente; as proteções são registradas pelas edições humanas na interface
+da planilha.
+
+### Homologação
+
+1. Atualizar `apps-script/Code.gs` **em uma cópia** da planilha,
+   com as mesmas abas e valores; GitHub e planilha não estão ligados para deploy.
+2. Executar `sincronizarAutomaticamente()` com a propriedade automática
+   desabilitada; revisar propostas sem escrita.
+3. Autorizar apenas a cópia; repetir algumas execuções e observar a rotação
+   do cursor, resultados e auditoria `_AuditoriaVinculosLichess`.
+4. Editar manualmente um status e apagar um link já preenchido; confirmar
+   a criação de `_ControleManualLichess` e a preservação na execução seguinte.
+5. Testar 403/429 com um mock ou esperar o limite real; não provocar
+   requisições repetidas em produção.
+6. Instalar na planilha oficial e ativar o acionador **somente após revisar
+   o funcionamento da cópia**. Conservar um acionador único.
+
+O sistema não fornece transação atômica entre a checagem e a gravação.
+O lock protege o script, mas não bloqueia edições humanas simultâneas.

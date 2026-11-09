@@ -30,11 +30,6 @@ const REINOS_CONFIG = Object.freeze({
   PAUSA_DESCOBERTA: 'DESCOBERTA_PAUSA_ATE_V1'
 });
 
-/** Simulação, sem modificar NENHUMA célula (nem cria a aba de auditoria). */
-function simularResultados() {
-  return executarSincronizacao_(false);
-}
-
 /** Execução manual, somente com propriedades de segurança preenchidas. */
 function aplicarResultados() {
   return executarSincronizacao_(true);
@@ -371,10 +366,6 @@ function datasLichess_(game, resultadoFinalConfirmado) {
   return {inicio: inicio, fim: fim};
 }
 
-function textoData_(value, timezone) {
-  return Utilities.formatDate(value, timezone, 'dd/MM/yyyy');
-}
-
 function dataCalendario_(value, timezone) {
   if (value instanceof Date && !Number.isNaN(value.getTime()))
     return Utilities.formatDate(value, timezone, 'yyyy-MM-dd');
@@ -399,93 +390,8 @@ function valorSnapshotIgual_(a, b) {
   return valoresIguais_(a, b);
 }
 
-/**
- * Grava individualmente somente G/H vazias, depois de conferir A:H novamente.
- * Não sobrescreve valores existentes, fórmulas ou quaisquer pontos/status.
- * Faltas/alterações no snapshot fazem a linha inteira ser ignorada.
- */
-function gravarDatasSeInalteradas_(sheet, rowNumber, expected, datas, faltam, gameId, spreadsheet) {
-  const range = sheet.getRange(rowNumber, 1, 1, 8);
-  const now = range.getValues()[0];
-  if (!expected.every((oldValue, idx) => valorSnapshotIgual_(oldValue, now[idx])) ||
-      normalizarNome_(now[4]).toLowerCase() === 'bye' ||
-      extrairIdPublico_(now[5]) !== gameId ||
-      (faltam.inicio && !celulaVazia_(now[6])) ||
-      (faltam.fim && !celulaVazia_(now[7]))) {
-    console.log(`Reinos: linha ${rowNumber}: A:H mudou desde a leitura; datas NÃO gravadas.`);
-    return false;
-  }
-  const timezone = spreadsheet.getSpreadsheetTimeZone();
-  if (faltam.inicio) sheet.getRange(rowNumber, 7).setValue(datas.inicio).setNumberFormat('dd/MM/yyyy');
-  if (faltam.fim) sheet.getRange(rowNumber, 8).setValue(datas.fim).setNumberFormat('dd/MM/yyyy');
-  SpreadsheetApp.flush();
-  const after = sheet.getRange(rowNumber, 1, 1, 8).getValues()[0];
-  if ((faltam.inicio && !mesmaDataCalendario_(after[6], datas.inicio, timezone)) ||
-      (faltam.fim && !mesmaDataCalendario_(after[7], datas.fim, timezone))) {
-    throw new Error(`Linha ${rowNumber}: datas gravadas mas leitura de confirmação falhou; conferir planilha.`);
-  }
-  try {
-    let audit = spreadsheet.getSheetByName(REINOS_CONFIG.ABA_AUDITORIA_DATAS);
-    if (!audit) {
-      audit = spreadsheet.insertSheet(REINOS_CONFIG.ABA_AUDITORIA_DATAS);
-      audit.appendRow(['Data UTC', 'Aba', 'Linha', 'ID público', 'Brancas', 'Pretas',
-        'Antes G', 'Antes H', 'Depois G', 'Depois H', 'Referência G', 'Referência H']);
-    }
-    audit.appendRow([new Date().toISOString(), REINOS_CONFIG.ABA_CONFRONTOS, rowNumber,
-      gameId, expected[0], expected[3], String(expected[6] || ''), String(expected[7] || ''),
-      faltam.inicio ? textoData_(datas.inicio, timezone) : String(expected[6] || ''),
-      faltam.fim ? textoData_(datas.fim, timezone) : String(expected[7] || ''),
-      'createdAt (criação)', 'lastMoveAt (último lance)']);
-  } catch (error) {
-    console.error(`Reinos: ALERTA: datas da linha ${rowNumber} GRAVADAS, mas auditoria falhou.`);
-  }
-  console.log(`Reinos: linha ${rowNumber}: gravação de datas confirmada.`);
-  return true;
-}
-
 function valoresIguais_(a, b) {
   return a === b || (celulaVazia_(a) && celulaVazia_(b));
-}
-
-function gravarSeInalterado_(sheet, rowNumber, expected, result, gameId, spreadsheet) {
-  // A:F deve continuar exatamente como na primeira leitura; evita sobrescrita
-  // de edições manuais concluídas durante a consulta ao Lichess.
-  const now = sheet.getRange(rowNumber, 1, 1, 6).getValues()[0];
-  if (!expected.slice(0, 6).every((oldValue, idx) => valoresIguais_(oldValue, now[idx])) ||
-      !celulaVazia_(now[1]) || !celulaVazia_(now[2]) ||
-      normalizarNome_(now[4]).toLowerCase() === 'bye' ||
-      extrairIdPublico_(now[5]) !== gameId) {
-    console.log(`Reinos: linha ${rowNumber}: modificada desde a leitura; NÃO escrita.`);
-    return false;
-  }
-  // O Apps Script não fornece compare-and-swap de células: persiste uma pequena
-  // janela de corrida entre esta validação e a escrita. Lock cobre execuções
-  // concorrentes deste mesmo script, NÃO alterações manuais externas.
-  sheet.getRange(rowNumber, 2, 1, 2).setValues([[result[0], result[1]]]);
-  sheet.getRange(rowNumber, 5).setValue('Finalizado');
-  SpreadsheetApp.flush();
-  const after = sheet.getRange(rowNumber, 1, 1, 6).getValues()[0];
-  if (!valoresIguais_(after[1], result[0]) || !valoresIguais_(after[2], result[1]) ||
-      after[4] !== 'Finalizado') {
-    throw new Error(`Linha ${rowNumber}: leitura de confirmação falhou; conferir manualmente a planilha.`);
-  }
-  // A auditoria NÃO pode afetar resultados já gravados: falha de auditoria
-  // é sinalizada explicitamente, sem afirmar que a escrita foi revertida.
-  try {
-    let audit = spreadsheet.getSheetByName(REINOS_CONFIG.ABA_AUDITORIA);
-    if (!audit) {
-      audit = spreadsheet.insertSheet(REINOS_CONFIG.ABA_AUDITORIA);
-      audit.appendRow(['Data UTC', 'Aba', 'Linha', 'ID jogo', 'Brancas', 'Pretas',
-        'Antes B', 'Antes C', 'Antes E', 'Depois B', 'Depois C', 'Depois E']);
-    }
-    audit.appendRow([new Date().toISOString(), REINOS_CONFIG.ABA_CONFRONTOS, rowNumber,
-      gameId, expected[0], expected[3], expected[1], expected[2], expected[4],
-      result[0], result[1], 'Finalizado']);
-  } catch (error) {
-    console.error(`Reinos: ALERTA: linha ${rowNumber} GRAVADA, mas falhou auditoria. Registrar manualmente.`);
-  }
-  console.log(`Reinos: linha ${rowNumber}: gravação confirmada.`);
-  return true;
 }
 
 /**
@@ -494,27 +400,6 @@ function gravarSeInalterado_(sheet, rowNumber, expected, result, gameId, spreads
  * Só vincula partidas públicas em correspondência de um dia, com contas e
  * cores idênticas e UMA única candidata por confronto; nunca sobrescreve F.
  */
-function simularDescoberta() { return descobrirPartidas_(false); }
-function aplicarDescoberta() { return descobrirPartidas_(true); }
-/**
- * Diagnóstico dirigido: executa somente as duas consultas do confronto
- * Humberto (brancas) x Lígia (pretas), sem escrever ou criar abas.
- * Não usa o token OAuth do navegador nem revela token de Apps Script.
- */
-function diagnosticarHumbertoLigia() {
-  return descobrirPartidas_(false, {white:'humberto',black:'ligia'});
-}
-/** Diagnóstico dirigido para a rodada 7: nenhuma gravação. */
-function diagnosticarEnricoGabriel() {
-  return descobrirPartidas_(false, {white:'enrico',black:'gabriel'});
-}
-/** Vincula APENAS Enrico x Gabriel após conferir único jogo compatível.
- * Requer todas as autorizações já usadas por aplicarDescoberta().
- */
-function aplicarDescobertaEnricoGabriel() {
-  return descobrirPartidas_(true, {white:'enrico',black:'gabriel'});
-}
-
 /** Consulta apenas metadados de uma partida pública para confirmar o prazo.
  * A listagem por usuário pode omitir daysPerTurn, mesmo em correspondência.
  */
@@ -837,38 +722,6 @@ function statusLichess_(game, result) {
   if (String(game.status || '').toLowerCase() === 'started') return 'Em andamento';
   return null;
 }
-/** Atualiza apenas E, sem sobrescrever B/C, F ou células alteradas.
- * Edições manuais simultâneas ainda não têm transação compare-and-swap;
- * o lock cobre somente duas execuções deste script.
- */
-function gravarStatusSeInalterado_(sheet,rowNumber,expected,status,gameId,spreadsheet) {
-  if (status !== 'Em andamento' && status !== 'Finalizado') return false;
-  const before=sheet.getRange(rowNumber,1,1,8).getValues()[0];
-  if (!expected.every((v,i)=>valorSnapshotIgual_(v,before[i]) ||
-      ((i===6||i===7) && !celulaVazia_(before[i]) && celulaVazia_(v))) ||
-      extrairIdPublico_(before[5])!==gameId ||
-      normalizarNome_(before[4]).toLowerCase()==='bye') return false;
-  // Status ativo não substitui placares, inclusive um zero isolado.
-  if (status==='Em andamento' && (!celulaVazia_(before[1]) || !celulaVazia_(before[2]))) return false;
-  if (before[4]===status || (status==='Em andamento' && normalizarNome_(before[4]).toLowerCase()==='finalizado')) return false;
-  sheet.getRange(rowNumber,5).setValue(status);
-  SpreadsheetApp.flush();
-  if(sheet.getRange(rowNumber,5).getValue()!==status)
-    throw new Error('Falha ao confirmar status na linha '+rowNumber);
-  try {
-    let audit=spreadsheet.getSheetByName(REINOS_CONFIG.ABA_AUDITORIA_STATUS);
-    if(!audit){
-      audit=spreadsheet.insertSheet(REINOS_CONFIG.ABA_AUDITORIA_STATUS);
-      audit.appendRow(['UTC','Aba','Linha','ID público','Brancas','Pretas','Status anterior','Status novo']);
-    }
-    audit.appendRow([new Date().toISOString(),REINOS_CONFIG.ABA_CONFRONTOS,rowNumber,gameId,
-      expected[0],expected[3],expected[4],status]);
-  } catch(e) {
-    console.error('Reinos: status gravado, mas auditoria falhou na linha '+rowNumber);
-  }
-  return true;
-}
-
 /** #18: a rodada de referência fica em Config!B (chave rodada_atual).
  * A falta de configuração desliga apenas a automação de elegibilidade. */
 function rodadaReferencia_(spreadsheet) {

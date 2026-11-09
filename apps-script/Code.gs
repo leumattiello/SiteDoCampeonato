@@ -7,7 +7,7 @@
  * Script Properties (Configurações do projeto > Propriedades do script):
  * - LICHESS_API_TOKEN: token pessoal Lichess de leitura (não publicar)
  * - PLANILHA_ID_AUTORIZADA: ID EXATO da planilha que este script pode editar
- * - GRAVACAO_HABILITADA: SIM (apenas para aplicarResultados)
+ * - GRAVACAO_HABILITADA: SIM (autoriza as funções de escrita)
  * - PERMITIR_PLANILHA_ORIGINAL: SIM (segundo bloqueio na produção)
  * - EXECUCAO_AUTOMATICA_HABILITADA: SIM (somente após aprovação)
  *
@@ -19,9 +19,7 @@ const REINOS_CONFIG = Object.freeze({
   ABA_CONFRONTOS: '2',
   ABA_JOGADORES: 'Jogadores',
   ABA_AUDITORIA: '_AuditoriaLichess',
-  ABA_AUDITORIA_DATAS: '_AuditoriaDatasLichess',
   ABA_AUDITORIA_VINCULOS: '_AuditoriaVinculosLichess',
-  ABA_AUDITORIA_STATUS: '_AuditoriaStatusLichess',
   ID_PLANILHA_ORIGINAL: '1YlGQwfYdT_J633frIN_wPiW3ExYqjC1gcum2xi1KwGc',
   MAX_CONSULTAS: 80,
   MAX_CONSULTAS_DESCOBERTA: 8,
@@ -47,7 +45,7 @@ function sincronizarAutomaticamente() {
     console.log('Reinos: Lichess em pausa após resposta de proteção; sem novas requisições.');
     return {descoberta:{status:'em_pausa'}, consolidacao:{status:'adiada'}};
   }
-  const descoberta = descobrirPartidas_(habilitado, null, {automatica:true});
+  const descoberta = descobrirPartidas_(habilitado, {automatica:true});
   if (descoberta.interrompida) {
     console.log('Reinos: consolidação adiada para evitar consultas após erro da API.');
     return {descoberta:descoberta, consolidacao:{status:'adiada'}};
@@ -398,8 +396,11 @@ function valoresIguais_(a, b) {
  * #11 ampliada: busca ativa de confrontos sem URL (F) na planilha.
  * Independente da sincronização #3/#4 e protegida pelas MESMAS propriedades.
  * Só vincula partidas públicas em correspondência de um dia, com contas e
- * cores idênticas e UMA única candidata por confronto; nunca sobrescreve F.
+ * cores idênticas e UMA única candidata por confronto.
  */
+/** Execução manual opcional da descoberta; a função agendada já a executa. */
+function aplicarDescoberta() { return descobrirPartidas_(true); }
+
 /** Consulta apenas metadados de uma partida pública para confirmar o prazo.
  * A listagem por usuário pode omitir daysPerTurn, mesmo em correspondência.
  */
@@ -513,7 +514,7 @@ function gravarVinculoSeInalterado_(sheet,rowNumber,expected,game,spreadsheet) {
   }catch(e){console.error('Reinos: vínculo aplicado mas auditoria falhou na linha '+rowNumber);}
   return true;
 }
-function descobrirPartidas_(escrever, filtro, opcoes) {
+function descobrirPartidas_(escrever, opcoes) {
   opcoes=opcoes||{};
   const automatica=!!opcoes.automatica;
   const env=obterAmbiente_(escrever);
@@ -548,7 +549,6 @@ function descobrirPartidas_(escrever, filtro, opcoes) {
     const pendentes=[];
     for(let idx=0;idx<grid.length;idx++){
       const row=grid[idx],white=normalizarNome_(row[0]),black=normalizarNome_(row[3]);
-      if(filtro && (white!==filtro.white||black!==filtro.black))continue;
       if(!white||!black||white===black||/^rodada\s+\d+$/.test(white)||
           normalizarNome_(row[4])==='bye')continue;
       // Só uma linha FINALIZADA e completamente preenchida é imutável.
@@ -569,7 +569,7 @@ function descobrirPartidas_(escrever, filtro, opcoes) {
     // Cursor persistente: em cada acionamento, verificar os próximos pares,
     // inclusive os antigos, os finalizados manualmente e rodadas futuras.
     let ordered=pendentes;
-    if(automatica && !filtro && pendentes.length) {
+    if(automatica && pendentes.length) {
       const previous=props.getProperty(REINOS_CONFIG.CURSOR_DESCOBERTA);
       resumo.cursorAnterior=previous||null;
       let next=pendentes.findIndex(x=>x.key+'#'+x.rowNumber===previous)+1;

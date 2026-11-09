@@ -23,12 +23,11 @@ As alterações humanas feitas na planilha **não têm mais proteção especial*
 
 ## Funções disponíveis
 
-- `sincronizarAutomaticamente()`: fluxo completo, destinado ao acionador periódico.
-- `simularResultados()`: simula atualização dos jogos já vinculados, sem escrever.
-- `aplicarResultados()`: atualiza jogos vinculados, com autorizações de gravação.
-- `simularDescoberta()`: descobre vínculos possíveis sem escrever.
-- `aplicarDescoberta()`: preenche apenas F onde houver um candidato único e confirmado.
-- `diagnosticarEnricoGabriel()` e `diagnosticarHumbertoLigia()`: diagnósticos dirigidos.
+- `sincronizarAutomaticamente()`: **função principal**, descoberta, atualização de partidas e elegibilidade; único acionador temporal recomendado.
+- `aplicarResultados()`: execução manual opcional da atualização de partidas com links, com as mesmas autorizações de escrita.
+- `aplicarDescoberta()`: execução manual opcional de vínculos sem link, com as mesmas autorizações.
+
+As funções de diagnóstico para confrontos individuais, simulações duplicadas e escritores antigos foram removidas. Os testes automatizados usam diretamente as funções internas em modo de simulação (sem gravar). Para uma simulação integral no Apps Script, desabilite `EXECUCAO_AUTOMATICA_HABILITADA` e execute `sincronizarAutomaticamente()`.
 
 ## Homologação
 

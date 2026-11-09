@@ -95,7 +95,7 @@ test('HTTP 403 interrompe descoberta, sem insistência e cria pausa',()=>{
 });
 test('links removidos manualmente voltam a ser candidatos à descoberta',()=>{
  const f=fixture({approved:false});
- const result=f.ctx.simularDescoberta();
+ const result=f.ctx.descobrirPartidas_(false);
  assert.equal(result.pendentes,6);
  assert.equal(result.linhasAnalisadas,4);
  assert.equal(f.writes.length,0);

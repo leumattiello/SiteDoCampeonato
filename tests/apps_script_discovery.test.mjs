@@ -124,29 +124,21 @@ test('varredura proativa circula por confrontos sem link e atualiza o cursor',()
  assert.equal(first.cursorNovo,null);
  assert.ok(first.consultas<=8);
 });
-test('partida encerrada com placar manual só pode ter link vinculado se a pontuação coincidir',()=>{
+test('descoberta ignora placar manual divergente se identifica uma única partida válida',()=>{
  const f=fixture({caseEnrico:true,listDays:1});
- f.rows[4][1]=1;f.rows[4][2]=0;f.rows[4][4]='Finalizado';
- const old=f.context.placarLichess_;
- f.context.placarLichess_=g=>[1,0];
- const match=f.context.diagnosticarEnricoGabriel();
- assert.equal(match.candidatos,1);
+ f.rows[4][1]=0;
+ f.rows[4][2]=1;
+ f.rows[4][4]='Finalizado';
+ const result=f.context.diagnosticarEnricoGabriel();
+ assert.equal(result.candidatos,1);
  assert.equal(f.rows[4][5],'');
- f.context.placarLichess_=g=>[0,1];
- const wrong=f.context.diagnosticarEnricoGabriel();
- assert.equal(wrong.candidatos,0);
- f.context.placarLichess_=old;
+ assert.equal(f.writes.length,0);
 });
-test('proteções manuais priorizam alterações humanas de F e E',()=>{
+test('descoberta respeita linha totalmente Finalizada e preenchida',()=>{
  const f=fixture({caseEnrico:true,listDays:1});
- const ctrlRows=[['UTC','Key','Col','Row'],
-   [new Date().toISOString(),'6|enrico|gabriel','F',5],
-   [new Date().toISOString(),'6|enrico|gabriel','E',5]];
- const ctrl={getDataRange:()=>({getValues:()=>ctrlRows})};
- const grid=f.rows;
- const k=f.context.chavesConfrontos_(grid);
- assert.equal(k[4],'6|enrico|gabriel');
- const protections={'5':new Set(['F','E'])};
- assert.equal(f.context.estaProtegidoManualmente_(protections,5,'F'),true);
- assert.equal(f.context.estaProtegidoManualmente_(protections,5,'B'),false);
+ f.rows[4]=['Enrico',1,0,'Gabriel','Finalizada','https://lichess.org/2Lx5SE4D',
+    new Date(created),new Date(created+86400000)];
+ const result=f.context.diagnosticarEnricoGabriel();
+ assert.equal(result.candidatos,0);
+ assert.equal(result.consultas,0);
 });

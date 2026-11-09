@@ -37,7 +37,7 @@ function fixture({apiStatus='started',winner=null,sheetStatus='Jogador em outra 
  return {world,rows,sheets,changes,logs};
 }
 test('simulação detecta Humberto x Ligia sem gravar',()=>{
- const f=fixture();const s=f.world.simularResultados();
+ const f=fixture();const s=f.world.executarSincronizacao_(false);
  assert.equal(s.candidatosStatus,1);assert.equal(s.aplicadosStatus,0);
  assert.equal(f.rows[1][4],'Jogador em outra partida');assert.equal(f.changes.length,0);
 });

@@ -81,7 +81,7 @@ const game = (id='Ab12Cd34',status='mate',winner='white',white='ana_l',black='be
 // Um teste de regressão deliberadamente usa links com 12 caracteres e exige ID público de 8.
 test('simulação nunca grava ou cria abas e consulta ID de 8 caracteres',()=>{
  const f=fixture({games:{Ab12Cd34:game()}});
- const out=f.world.simularResultados();
+ const out=f.world.executarSincronizacao_(false);
  assert.equal(out.modo,'SIMULACAO');assert.equal(out.candidatos,1);assert.equal(out.aplicados,0);
  assert.deepEqual(f.rows,f.originals);assert.deepEqual(f.writes,[]);
  assert.equal(f.requests.length,2);assert.match(f.requests[0].url,/\/Ab12Cd34\?/);
@@ -113,14 +113,14 @@ test('não escreve original sem liberação específica',()=>{
 
 test('resultado manual, inclusive 0, e Bye são preservados',()=>{
  const f=fixture({games:{Ab12Cd34:game(),Zb12Cd34:game('Zb12Cd34')}});
- f.world.simularResultados();assert.equal(f.requests.length,2);
+ f.world.executarSincronizacao_(false);assert.equal(f.requests.length,2);
  assert.deepEqual(f.rows[3],f.originals[3]); assert.deepEqual(f.rows[4],f.originals[4]);
 });
 
 test('jogo ativo, não iniciado, abortado ou encerrado sem vencedor não gravam',()=>{
  for (const status of ['started','created','aborted','mate','noStart']) {
    const f=fixture({games:{Ab12Cd34:game('Ab12Cd34',status,status==='mate'?null:'white')}});
-   assert.equal(f.world.simularResultados().candidatos,0,status);
+   assert.equal(f.world.executarSincronizacao_(false).candidatos,0,status);
  }
 });
 
@@ -135,15 +135,15 @@ test('empate e vitória de pretas são classificados',()=>{
 test('recusa jogadores invertidos e identificador retornado errado',()=>{
  for (const payload of [game('Ab12Cd34','mate','white','beto_l','ana_l'),game('Zz12Cd34')]) {
    const f=fixture({games:{Ab12Cd34:payload}});
-   assert.equal(f.world.simularResultados().candidatos,0);
-   assert.equal(f.world.simularResultados().divergencias,1);
+   assert.equal(f.world.executarSincronizacao_(false).candidatos,0);
+   assert.equal(f.world.executarSincronizacao_(false).divergencias,1);
  }
 });
 
 test('detecta ID duplicado e bloqueia consulta',()=>{
  const rows=[['Brancas','B','C','Pretas','Status','Link'],['Ana','','','Beto','Em andamento','https://lichess.org/Ab12Cd34'],['Beto','','','Ana','Em andamento','https://lichess.org/Ab12Cd34']];
- const f=fixture({rows,games:{Ab12Cd34:game()}});assert.equal(f.world.simularResultados().consultas,0);
- assert.equal(f.world.simularResultados().divergencias,2);
+ const f=fixture({rows,games:{Ab12Cd34:game()}});assert.equal(f.world.executarSincronizacao_(false).consultas,0);
+ assert.equal(f.world.executarSincronizacao_(false).divergencias,2);
 });
 
 test('ajusta dados escritos durante a consulta quando identidade da partida permanece',()=>{
@@ -154,18 +154,18 @@ test('ajusta dados escritos durante a consulta quando identidade da partida perm
 
 test('célula parcialmente preenchida permanece intacta',()=>{
  const f=fixture({rows:[['Brancas','B','C','Pretas','Status','Link'],['Ana',0,'','Beto','Em andamento','https://lichess.org/Ab12Cd34']],games:{Ab12Cd34:game()}});
- assert.equal(f.world.simularResultados().consultas,1);
+ assert.equal(f.world.executarSincronizacao_(false).consultas,1);
 });
 
 test('token ausente bloqueia inclusive consulta simulada, sem vazamento',()=>{
  const f=fixture({props:{LICHESS_API_TOKEN:''},games:{Ab12Cd34:game()}});
- assert.throws(()=>f.world.simularResultados(),/LICHESS_API_TOKEN/);
+ assert.throws(()=>f.world.executarSincronizacao_(false),/LICHESS_API_TOKEN/);
  assert.equal(f.requests.length,0);
 });
 
 test('HTTP 401 não provoca gravação ou vazamento da credencial',()=>{
  const f=fixture({games:{Ab12Cd34:{httpCode:401}}});
- assert.equal(f.world.simularResultados().erros,1);assert.deepEqual(f.writes,[]);
+ assert.equal(f.world.executarSincronizacao_(false).erros,1);assert.deepEqual(f.writes,[]);
  assert.ok(f.logs.some(x=>x.includes('HTTP 401')));
  assert.ok(f.logs.every(x=>!x.includes('TOKEN_NAO_REAL')));
 });
@@ -173,7 +173,7 @@ test('HTTP 401 não provoca gravação ou vazamento da credencial',()=>{
 test('HTTP 429 suspende consultas posteriores',()=>{
  const rows=[['Brancas','B','C','Pretas','Status','Link'],['Ana','','','Beto','Em andamento','https://lichess.org/Ab12Cd34'],['Ana','','','Cida','Em andamento','https://lichess.org/Zb12Cd34']];
  const f=fixture({rows,games:{Ab12Cd34:{httpCode:429},Zb12Cd34:game('Zb12Cd34','mate','white','ana_l','cida_l')}});
- assert.equal(f.world.simularResultados().consultas,1);
+ assert.equal(f.world.executarSincronizacao_(false).consultas,1);
 });
 
 test('agendamento apenas simula se não habilitado explicitamente',()=>{
@@ -187,19 +187,19 @@ test('agendamento apenas simula se não habilitado explicitamente',()=>{
 test('nick ausente/duplicado bloqueia importação',()=>{
  const nicks=[['Nome','Nick Lichess'],['Ana','ana_l'],['Ana','ana_other'],['Beto','beto_l']];
  const f=fixture({nicks,games:{Ab12Cd34:game()}});
- assert.equal(f.world.simularResultados().candidatos,0);
+ assert.equal(f.world.executarSincronizacao_(false).candidatos,0);
 });
 
 test('links forjados não são consultados',()=>{
  const rows=[['Brancas','B','C','Pretas','Status','Link'],['Ana','','','Beto','Em andamento','https://lichess.org.evil/Ab12Cd34']];
  const f=fixture({rows,games:{Ab12Cd34:game()}});
- assert.equal(f.world.simularResultados().consultas,0);
+ assert.equal(f.world.executarSincronizacao_(false).consultas,0);
 });
 
 test('Bye nunca é escrito mesmo com link e adversário preenchidos por engano',()=>{
  const rows=[['Brancas','B','C','Pretas','Status','Link'],['Ana','','','Beto','Bye','https://lichess.org/Ab12Cd34']];
  const f=fixture({rows,games:{Ab12Cd34:game()}});
- assert.equal(f.world.simularResultados().consultas,0);
+ assert.equal(f.world.executarSincronizacao_(false).consultas,0);
 });
 
 test('agendamento habilitado com dois bloqueios grava apenas no backup autorizado',()=>{
@@ -213,7 +213,7 @@ const gWithDates=(status='mate',winner='white')=>({...game('Ab12Cd34',status,win
 
 test('#4 simulação de G/H não altera planilha nem cria auditoria',()=>{
  const f=fixture({games:{Ab12Cd34:gWithDates()}});
- const sum=f.world.simularResultados();
+ const sum=f.world.executarSincronizacao_(false);
  assert.equal(sum.candidatosDatas,1);
  assert.equal(sum.aplicadosDatas,0);
  assert.deepEqual(f.rows,f.originals);
@@ -265,7 +265,7 @@ test('#4 jogo iniciado recebe G e nunca H até ter resultado final',()=>{
 test('#4 created/noStart/aborted não recebem datas mesmo que createdAt exista',()=>{
  for(const status of ['created','noStart','aborted']) {
   const f=fixture({games:{Ab12Cd34:gWithDates(status)}});
-  const summary=f.world.simularResultados();
+  const summary=f.world.executarSincronizacao_(false);
   assert.equal(summary.candidatosDatas,0,status);
  }
 });
@@ -290,7 +290,7 @@ test('#4 mudança manual em G durante fetch é corrigida pelo Lichess',()=>{
 test('#4 Bye e vínculo com cores incorretas nunca recebem datas',()=>{
  const f=fixture({games:{Ab12Cd34:gWithDates()}});
  f.rows[2][3]='Cida'; // jogadores reais não conferem; mock data já estava carregado
- const summary=f.world.simularResultados();
+ const summary=f.world.executarSincronizacao_(false);
  assert.equal(summary.candidatosDatas,0);
  assert.equal(f.sheets._AuditoriaDatasLichess,undefined);
 });
@@ -299,7 +299,7 @@ test('Finalizado completo A:H preserva todas as colunas e não consulta API',()=
  const rows=[['Brancas','B','C','Pretas','Status','Link','Início','Fim'],
    ['Ana',1,0,'Beto','Finalizado','https://lichess.org/Ab12Cd34','01/10/2026','03/10/2026']];
  const f=fixture({rows,games:{Ab12Cd34:game('Ab12Cd34','mate','black')}});
- const result=f.world.simularResultados();
+ const result=f.world.executarSincronizacao_(false);
  assert.equal(result.congelados,1);
  assert.equal(result.consultas,0);
  assert.deepEqual(f.rows,rows);

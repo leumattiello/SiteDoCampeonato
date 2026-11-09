@@ -610,9 +610,11 @@ function partidaElegivelVinculo_(g, esperadoWhite, esperadoBlack, desde) {
 function gravarVinculoSeInalterado_(sheet,rowNumber,expected,game,spreadsheet) {
   const range=sheet.getRange(rowNumber,1,1,8);
   const now=range.getValues()[0];
-  if(!expected.every((value,index)=>valorSnapshotIgual_(value,now[index])) ||
-     !celulaVazia_(now[5])||!now[3]||
-     normalizarNome_(now[4]).toLowerCase()==='bye')return false;
+  if(linhaFinalizadaCompleta_(now) ||
+     !now[3] || normalizarNome_(now[4]).toLowerCase()==='bye' ||
+     normalizarNome_(now[0])!==normalizarNome_(expected[0]) ||
+     normalizarNome_(now[3])!==normalizarNome_(expected[3]) ||
+     extrairIdPublico_(now[5]))return false;
   const url='https://lichess.org/'+game.id;
   sheet.getRange(rowNumber,6).setValue(url);
   SpreadsheetApp.flush();
@@ -622,7 +624,7 @@ function gravarVinculoSeInalterado_(sheet,rowNumber,expected,game,spreadsheet) {
     if(!audit){audit=spreadsheet.insertSheet(REINOS_CONFIG.ABA_AUDITORIA_VINCULOS);
       audit.appendRow(['UTC','Aba','Linha','Brancas','Pretas','ID público','F antes','F depois','Verificação']);}
     audit.appendRow([new Date().toISOString(),REINOS_CONFIG.ABA_CONFRONTOS,rowNumber,
-      expected[0],expected[3],game.id,'',url,'Cores, contas, modalidade e 1 dia confirmados; candidato único']);
+      expected[0],expected[3],game.id,String(now[5]||''),url,'Cores, contas, modalidade e 1 dia confirmados; candidato único']);
   }catch(e){console.error('Reinos: vínculo aplicado mas auditoria falhou na linha '+rowNumber);}
   return true;
 }
@@ -640,7 +642,6 @@ function descobrirPartidas_(escrever, filtro, opcoes) {
     const players=env.spreadsheet.getSheetByName(REINOS_CONFIG.ABA_JOGADORES);
     if(!sheet||!players)throw new Error('Abas 2 e Jogadores obrigatórias.');
     const grid=sheet.getDataRange().getValues();
-    const protecoes=lerProtecoesManuais_(env.spreadsheet,grid);
     const nicks=mapaJogadores_(players.getDataRange().getValues());
     const ids=contarIdsJogo_(grid);
     const desde=inicioBuscaVinculos_(grid);
@@ -665,11 +666,10 @@ function descobrirPartidas_(escrever, filtro, opcoes) {
       if(filtro && (white!==filtro.white||black!==filtro.black))continue;
       if(!white||!black||white===black||/^rodada\s+\d+$/.test(white)||
           normalizarNome_(row[4])==='bye')continue;
-      if(!celulaVazia_(row[5]) || estaProtegidoManualmente_(protecoes,idx+1,'F')){
-        resumo.ignorados++;continue;
-      }
-      // Preenchimentos incompletos, corrigidos à mão, não podem ser inferidos.
-      if(celulaVazia_(row[1])!==celulaVazia_(row[2])){
+      // Só uma linha FINALIZADA e completamente preenchida é imutável.
+      // Links válidos com formato reconhecido serão sincronizados no passo seguinte.
+      // Links desconhecidos/ausentes continuam candidatos à descoberta.
+      if(linhaFinalizadaCompleta_(row)||extrairIdPublico_(row[5])){
         resumo.ignorados++;continue;
       }
       const w=nicks[white],b=nicks[black];
@@ -799,18 +799,9 @@ function descobrirPartidas_(escrever, filtro, opcoes) {
           continue;
         }
         if(!partidaElegivelVinculo_(game,w,b,desde))continue;
-        if(expected[6] instanceof Date &&
-           Math.abs(expected[6].getTime()-game.createdAt)>6*86400000){
-          resumo.descartadosPorData++;continue;
-        }
-        // Se organizador lançou placar antes de inserir URL, só reconhecer
-        // jogo finalizado que confirme ambos os pontos exatamente.
-        const manualPlacar=!celulaVazia_(expected[1])||!celulaVazia_(expected[2]);
-        if(manualPlacar){
-          const result=placarLichess_(game);
-          if(result===null||!valoresIguais_(expected[1],result[0])||
-             !valoresIguais_(expected[2],result[1]))continue;
-        }
+        // Datas e placares da planilha podem estar desatualizados:
+        // só o identificador, as contas, as cores e o tipo de jogo
+        // são usados para decidir a associação.
         resumo.jogosConfirmados++;validos[gid]=game;
       }
       const choices=Object.values(validos),suspeitos=Object.values(inconclusivos);
@@ -821,8 +812,7 @@ function descobrirPartidas_(escrever, filtro, opcoes) {
         resumo.candidatos++;vistos[gid]=true;
         console.log('Reinos: possível vínculo linha '+rowNumber+' ID '+game.id+
           (escrever?'':' [SIMULAÇÃO]'));
-        if(escrever&&!estaProtegidoManualmente_(protecoes,rowNumber,'F')&&
-           gravarVinculoSeInalterado_(sheet,rowNumber,expected,game,env.spreadsheet)){
+        if(escrever&&gravarVinculoSeInalterado_(sheet,rowNumber,expected,game,env.spreadsheet)){
           ids[gid]=1;resumo.aplicados++;
         }
       } else if(choices.length>1 || (choices.length&&suspeitos.length)){
@@ -918,9 +908,6 @@ function propostasElegibilidade_(rows,referencia,finaisVerificados,protecoes) {
     const temLink=!celulaVazia_(r[5]);
     const parcial=!celulaVazia_(r[1])||!celulaVazia_(r[2]);
     const estado=normalizarNome_(r[4]);
-    if (estaProtegidoManualmente_(protecoes,i+1,'E') && estado==='aguardando inicio') {
-      ocupados.add(white);ocupados.add(black);
-    }
     // O link e/ou estado em andamento significam ocupação até que
     // resultado conferido prove a liberação. Finalizado sem placar é
     // inconclusivo e também bloqueia um segundo jogo.
@@ -951,7 +938,7 @@ function propostasElegibilidade_(rows,referencia,finaisVerificados,protecoes) {
   const propostas=[];
   for(const m of confrontos) {
     if(!['jogador em outra partida','aguardando inicio'].includes(m.estado))continue;
-    if(m.final||m.temLink||m.parcial||estaProtegidoManualmente_(protecoes,m.row,'E'))continue;
+    if(m.final||m.temLink||m.parcial||linhaFinalizadaCompleta_(m.raw))continue;
     const novo=escolhidas.has(m.row)?'Aguardando início':'Jogador em outra partida';
     if(nomeNormalizado_(m.raw[4])!==novo)propostas.push({row:m.row,original:m.raw,novo});
   }
@@ -964,7 +951,7 @@ function gravarElegibilidadeSeInalterada_(sheet,proposal,referencia,spreadsheet)
   if(rodadaReferencia_(spreadsheet)!==referencia)return false;
   const r=sheet.getRange(proposal.row,1,1,8).getValues()[0];
   const expected=Array.from({length:8},(_,i)=>proposal.original[i]===undefined?'':proposal.original[i]);
-  if(!expected.every((v,i)=>valorSnapshotIgual_(v,r[i])) ||
+  if(linhaFinalizadaCompleta_(r) ||
     !celulaVazia_(r[5])||!celulaVazia_(r[1])||!celulaVazia_(r[2])||
     !['jogador em outra partida','aguardando inicio'].includes(normalizarNome_(r[4])) ||
     !['Aguardando início','Jogador em outra partida'].includes(proposal.novo))return false;
@@ -1003,3 +990,15 @@ function sincronizarElegibilidade_(sheet,rows,referencia,escrever,spreadsheet,re
   }
 }
 
+
+/** Identifica um confronto na rodada para manter o cursor de descoberta. */
+function chavesConfrontos_(grid) {
+  let rodada=0;
+  return grid.map(row=>{
+    const header=/^rodada\s+(\d+)$/i.exec(nomeNormalizado_(row[0]));
+    if(header){rodada=Number(header[1]);return null;}
+    const white=normalizarNome_(row[0]),black=normalizarNome_(row[3]);
+    return rodada>0&&white&&black&&white!==black?
+      rodada+'|'+white+'|'+black:null;
+  });
+}

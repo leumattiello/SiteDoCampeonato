@@ -45,10 +45,10 @@ test('status iniciado atualiza E, cria auditoria e é idempotente',()=>{
  const f=fixture({authorized:true});
  const first=f.world.aplicarResultados();
  assert.equal(first.aplicadosStatus,1);assert.equal(f.rows[1][4],'Em andamento');
- assert.equal(f.sheets._AuditoriaStatusLichess.data[1][7],'Em andamento');
+ assert.equal(f.sheets._AuditoriaLichess.data[1][11],'Em andamento');
  const second=f.world.aplicarResultados();
  assert.equal(second.aplicadosStatus,0);
- assert.equal(f.sheets._AuditoriaStatusLichess.data.length,2);
+ assert.equal(f.sheets._AuditoriaLichess.data.length,2);
 });
 test('resultado final validado atualiza placar B/C e E pelo fluxo existente',()=>{
  const f=fixture({apiStatus:'mate',winner:'white',authorized:true});
@@ -62,17 +62,17 @@ test('status finalizado com placar idêntico pode ser reconciliado',()=>{
  assert.equal(s.aplicadosStatus,1);assert.equal(f.rows[1][4],'Finalizado');
  assert.equal(s.aplicados,0);
 });
-test('placar manual divergente impede alteração de E, B e C',()=>{
+test('placar manual divergente é corrigido pelo Lichess em E, B e C',()=>{
  const f=fixture({apiStatus:'mate',winner:'white',score:[0,1],authorized:true});
  const s=f.world.aplicarResultados();
- assert.equal(s.aplicadosStatus,0);assert.equal(s.conflitosStatus,1);
- assert.equal(f.rows[1][4],'Jogador em outra partida');
- assert.deepEqual(f.rows[1].slice(1,3),[0,1]);
+ assert.equal(s.aplicadosStatus,1);assert.equal(s.aplicados,1);
+ assert.equal(f.rows[1][4],'Finalizado');
+ assert.deepEqual(f.rows[1].slice(1,3),[1,0]);
 });
-test('não rebaixa Finalizado quando Lichess informa started',()=>{
+test('revisa status Finalizado incompleto quando Lichess informa started',()=>{
  const f=fixture({apiStatus:'started',sheetStatus:'Finalizado',authorized:true});
  const s=f.world.aplicarResultados();
- assert.equal(s.aplicadosStatus,0);assert.equal(f.rows[1][4],'Finalizado');
+ assert.equal(s.aplicadosStatus,1);assert.equal(f.rows[1][4],'Em andamento');
 });
 test('Bye, falta de ID e estados inconclusivos não atualizam status',()=>{
  const f=fixture({apiStatus:'created',authorized:true});

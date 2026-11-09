@@ -146,10 +146,10 @@ test('detecta ID duplicado e bloqueia consulta',()=>{
  assert.equal(f.world.simularResultados().divergencias,2);
 });
 
-test('não sobrescreve linha alterada durante consulta ao Lichess',()=>{
+test('ajusta dados escritos durante a consulta quando identidade da partida permanece',()=>{
  const f=fixture({props:{GRAVACAO_HABILITADA:'SIM',PLANILHA_ID_AUTORIZADA:'BACKUP-IDENTIFIER'},games:{Ab12Cd34:game()},mutateOnRead:rows=>{rows[2][1]=0;rows[2][2]=1;}});
- assert.equal(f.world.aplicarResultados().aplicados,0);
- assert.deepEqual(f.rows[2].slice(1,3),[0,1]);assert.equal(f.sheets._AuditoriaLichess,undefined);
+ assert.equal(f.world.aplicarResultados().aplicados,1);
+ assert.deepEqual(f.rows[2].slice(1,3),[1,0]);assert.ok(f.sheets._AuditoriaLichess);
 });
 
 test('célula parcialmente preenchida permanece intacta',()=>{
@@ -218,7 +218,7 @@ test('#4 simulação de G/H não altera planilha nem cria auditoria',()=>{
  assert.equal(sum.aplicadosDatas,0);
  assert.deepEqual(f.rows,f.originals);
  assert.equal(f.sheets._AuditoriaDatasLichess,undefined);
- assert.ok(f.logs.some(x=>x.includes('G=09/10/2026') && x.includes('H=12/10/2026')));
+ assert.ok(f.logs.some(x=>x.includes('G,H <- Lichess')));
 });
 
 test('#4 escreve G/H como datas reais e com fuso da planilha; sem alterar B/C/E preexistentes',()=>{
@@ -228,8 +228,7 @@ test('#4 escreve G/H como datas reais e com fuso da planilha; sem alterar B/C/E 
  assert.equal(f.rows[2][6].getTime(),TIMESTAMP_CREATED);
  assert.equal(f.rows[2][7].getTime(),TIMESTAMP_LAST);
  assert.deepEqual(f.rows[2].slice(1,3),[1,0]);
- assert.equal(f.sheets._AuditoriaDatasLichess.data[1][2],3);
- assert.equal(f.sheets._AuditoriaDatasLichess.data[1][8],'09/10/2026');
+ assert.equal(f.sheets._AuditoriaLichess.data[1][2],3);
  assert.ok(f.writes.some(x=>x.c===7 && x.format==='dd/MM/yyyy'));
  assert.ok(f.writes.some(x=>x.c===8 && x.format==='dd/MM/yyyy'));
 });
@@ -244,14 +243,14 @@ test('#4 preenche datas de jogo com placar manual, sem tocar nos pontos',()=>{
  assert.equal(f.rows[1][7].getTime(),TIMESTAMP_LAST);
 });
 
-test('#4 preserva G manual e preenche somente H ausente, registrando divergência',()=>{
+test('#4 corrige G manual divergente e preenche H ausente',()=>{
  const rows=[['Brancas','B','C','Pretas','Status','Link','Data Início','Data Fim'],['Ana',1,0,'Beto','Finalizado','https://lichess.org/Ab12Cd34','01/10/2026','']];
  const f=fixture({rows,games:{Ab12Cd34:gWithDates()},props:{GRAVACAO_HABILITADA:'SIM',PLANILHA_ID_AUTORIZADA:'BACKUP-IDENTIFIER'}});
  const sum=f.world.aplicarResultados();
- assert.equal(sum.divergenciasDatas,1);
- assert.equal(f.rows[1][6],'01/10/2026');
+ assert.equal(sum.aplicadosDatas,1);
+ assert.equal(f.rows[1][6].getTime(),TIMESTAMP_CREATED);
  assert.equal(f.rows[1][7].getTime(),TIMESTAMP_LAST);
- assert.equal(f.writes.filter(x=>x.c===7).length,0);
+ assert.ok(f.writes.some(x=>x.c===7));
 });
 
 test('#4 jogo iniciado recebe G e nunca H até ter resultado final',()=>{
@@ -280,12 +279,12 @@ test('#4 recusa lastMoveAt anterior à criação, futuro ou timestamp ausente',(
  }
 });
 
-test('#4 mudança manual em G durante fetch impede escrever G/H',()=>{
+test('#4 mudança manual em G durante fetch é corrigida pelo Lichess',()=>{
  const f=fixture({games:{Ab12Cd34:gWithDates()},props:{GRAVACAO_HABILITADA:'SIM',PLANILHA_ID_AUTORIZADA:'BACKUP-IDENTIFIER'},mutateOnRead:rows=>{rows[2][6]='12/10/2026';}});
  const summary=f.world.aplicarResultados();
- assert.equal(summary.aplicadosDatas,0);
- assert.equal(f.rows[2][6],'12/10/2026');
- assert.ok(f.rows[2][7]===undefined||f.rows[2][7]==='');
+ assert.equal(summary.aplicadosDatas,1);
+ assert.equal(f.rows[2][6].getTime(),TIMESTAMP_CREATED);
+ assert.equal(f.rows[2][7].getTime(),TIMESTAMP_LAST);
 });
 
 test('#4 Bye e vínculo com cores incorretas nunca recebem datas',()=>{

@@ -294,3 +294,48 @@ test('#4 Bye e vínculo com cores incorretas nunca recebem datas',()=>{
  assert.equal(summary.candidatosDatas,0);
  assert.equal(f.sheets._AuditoriaDatasLichess,undefined);
 });
+
+test('Finalizado completo A:H preserva todas as colunas e não consulta API',()=>{
+ const rows=[['Brancas','B','C','Pretas','Status','Link','Início','Fim'],
+   ['Ana',1,0,'Beto','Finalizado','https://lichess.org/Ab12Cd34','01/10/2026','03/10/2026']];
+ const f=fixture({rows,games:{Ab12Cd34:game('Ab12Cd34','mate','black')}});
+ const result=f.world.simularResultados();
+ assert.equal(result.congelados,1);
+ assert.equal(result.consultas,0);
+ assert.deepEqual(f.rows,rows);
+ assert.deepEqual(f.writes,[]);
+});
+test('Finalizada completa também é intocável mesmo em modo gravação',()=>{
+ const rows=[['Brancas','B','C','Pretas','Status','Link','Início','Fim'],
+   ['Ana',0,1,'Beto','Finalizada','https://lichess.org/Ab12Cd34','01/10/2026','03/10/2026']];
+ const f=fixture({rows,props:{GRAVACAO_HABILITADA:'SIM',PLANILHA_ID_AUTORIZADA:'BACKUP-IDENTIFIER'},
+   games:{Ab12Cd34:game('Ab12Cd34','mate','white')}});
+ const result=f.world.aplicarResultados();
+ assert.equal(result.congelados,1);
+ assert.equal(result.consultas,0);
+ assert.deepEqual(f.rows,rows);
+ assert.deepEqual(f.writes,[]);
+});
+test('Finalizado incompleto é corrigido pelo Lichess e completa as datas',()=>{
+ const rows=[['Brancas','B','C','Pretas','Status','Link','Início','Fim'],
+   ['Ana',0,1,'Beto','Finalizado','https://lichess.org/Ab12Cd34','','']];
+ const f=fixture({rows,games:{Ab12Cd34:gWithDates()},props:{
+   GRAVACAO_HABILITADA:'SIM',PLANILHA_ID_AUTORIZADA:'BACKUP-IDENTIFIER'}});
+ const out=f.world.aplicarResultados();
+ assert.equal(out.aplicados,1);
+ assert.equal(out.aplicadosDatas,1);
+ assert.deepEqual(f.rows[1].slice(1,3),[1,0]);
+ assert.equal(f.rows[1][6].getTime(),TIMESTAMP_CREATED);
+ assert.equal(f.rows[1][7].getTime(),TIMESTAMP_LAST);
+});
+test('jogo iniciado remove placar/H manual indevido em linha não congelada',()=>{
+ const rows=[['Brancas','B','C','Pretas','Status','Link','Início','Fim'],
+   ['Ana',1,0,'Beto','Finalizada','https://lichess.org/Ab12Cd34','01/10/2026','']];
+ const f=fixture({rows,games:{Ab12Cd34:game('Ab12Cd34','started',null)},
+   props:{GRAVACAO_HABILITADA:'SIM',PLANILHA_ID_AUTORIZADA:'BACKUP-IDENTIFIER'}});
+ const out=f.world.aplicarResultados();
+ assert.equal(out.aplicados,1);
+ assert.equal(f.rows[1][1],'');
+ assert.equal(f.rows[1][2],'');
+ assert.equal(f.rows[1][4],'Em andamento');
+});

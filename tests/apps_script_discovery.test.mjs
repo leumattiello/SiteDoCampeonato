@@ -48,7 +48,7 @@ function fixture({listDays=null,detailDays=1,omitGame=false,caseEnrico=false,leg
 }
 test('sem daysPerTurn na listagem, export confirma 1 dia e permite candidato apenas em simulação',()=>{
  const f=fixture();
- const r=f.context.diagnosticarHumbertoLigia();
+ const r=f.context.descobrirPartidas_(false);
  assert.equal(r.candidatos,1);assert.equal(r.aplicados,0);
  assert.equal(r.consultasDetalhes,1);
  assert.equal(f.writes.length,0);
@@ -58,28 +58,28 @@ test('sem daysPerTurn na listagem, export confirma 1 dia e permite candidato ape
 });
 test('export também sem prazo: não faz vinculação automática e explica motivo',()=>{
  const f=fixture({detailDays:null});
- const r=f.context.diagnosticarHumbertoLigia();
+ const r=f.context.descobrirPartidas_(false);
  assert.equal(r.candidatos,0);
  assert.equal(r.prazoNaoConfirmado,1);
  assert.equal(f.writes.length,0);
 });
 test('sem partidas retornadas: informa claramente, sem atribuir a filtro',()=>{
  const f=fixture({omitGame:true});
- const r=f.context.diagnosticarHumbertoLigia();
+ const r=f.context.descobrirPartidas_(false);
  assert.equal(r.jogosRetornados,0);
  assert.equal(r.semJogos,1);
  assert.ok(f.logs.some(s=>s.includes('nenhum jogo retornado')));
 });
 test('jogo com 3 dias/lance não é vinculado',()=>{
  const f=fixture({listDays:3,detailDays:3});
- const r=f.context.diagnosticarHumbertoLigia();
+ const r=f.context.descobrirPartidas_(false);
  assert.equal(r.candidatos,0);
  assert.equal(f.writes.length,0);
 });
 
 test('Enrico x Gabriel: busca reduzida encontra jogo ocultado pelos filtros extras',()=>{
  const f=fixture({caseEnrico:true,listDays:1,legacyFiltersReturnEmpty:true});
- const r=f.context.diagnosticarEnricoGabriel();
+ const r=f.context.descobrirPartidas_(false);
  assert.equal(r.erros,0);
  assert.equal(r.candidatos,1);
  assert.equal(r.jogosConfirmados,1);
@@ -95,7 +95,7 @@ test('Enrico x Gabriel: busca reduzida encontra jogo ocultado pelos filtros extr
 });
 test('busca reduzida mantém checagem local de jogadores e cores',()=>{
  const f=fixture({caseEnrico:true,listDays:1,wrongColors:true});
- const r=f.context.diagnosticarEnricoGabriel();
+ const r=f.context.descobrirPartidas_(false);
  assert.equal(r.candidatos,0);
  assert.equal(r.descartadosPorCores,1);
  assert.equal(f.writes.length,0);
@@ -105,7 +105,7 @@ test('busca reduzida continua recusando jogos fora da data mínima',()=>{
  // A data mínima é calculada a partir do primeiro jogo com G preenchida.
  // Como o jogo novo é de 1º de novembro, mover a referência inicial para frente o exclui.
  f.rows[2][6]=new Date(Date.UTC(2026,11,20));
- const r=f.context.diagnosticarEnricoGabriel();
+ const r=f.context.descobrirPartidas_(false);
  assert.equal(r.candidatos,0);
  assert.equal(r.descartadosPorData,1);
 });
@@ -118,35 +118,27 @@ test('varredura proativa circula por confrontos sem link e atualiza o cursor',()
    f.rows.push(['Humberto','','','Ligia','Jogador em outra partida','','','']);
  const props={};
  // Teste do algoritmo do cursor: chamadas simuladas não devem gravar.
- const first=f.context.descobrirPartidas_(false,null,{automatica:true});
+ const first=f.context.descobrirPartidas_(false,{automatica:true});
  assert.equal(first.modo,'SIMULACAO');
  assert.equal(first.aplicados,0);
  assert.equal(first.cursorNovo,null);
  assert.ok(first.consultas<=8);
 });
-test('partida encerrada com placar manual só pode ter link vinculado se a pontuação coincidir',()=>{
+test('descoberta ignora placar manual divergente se identifica uma única partida válida',()=>{
  const f=fixture({caseEnrico:true,listDays:1});
- f.rows[4][1]=1;f.rows[4][2]=0;f.rows[4][4]='Finalizado';
- const old=f.context.placarLichess_;
- f.context.placarLichess_=g=>[1,0];
- const match=f.context.diagnosticarEnricoGabriel();
- assert.equal(match.candidatos,1);
+ f.rows[4][1]=0;
+ f.rows[4][2]=1;
+ f.rows[4][4]='Finalizado';
+ const result=f.context.descobrirPartidas_(false);
+ assert.equal(result.candidatos,1);
  assert.equal(f.rows[4][5],'');
- f.context.placarLichess_=g=>[0,1];
- const wrong=f.context.diagnosticarEnricoGabriel();
- assert.equal(wrong.candidatos,0);
- f.context.placarLichess_=old;
+ assert.equal(f.writes.length,0);
 });
-test('proteções manuais priorizam alterações humanas de F e E',()=>{
+test('descoberta respeita linha totalmente Finalizada e preenchida',()=>{
  const f=fixture({caseEnrico:true,listDays:1});
- const ctrlRows=[['UTC','Key','Col','Row'],
-   [new Date().toISOString(),'6|enrico|gabriel','F',5],
-   [new Date().toISOString(),'6|enrico|gabriel','E',5]];
- const ctrl={getDataRange:()=>({getValues:()=>ctrlRows})};
- const grid=f.rows;
- const k=f.context.chavesConfrontos_(grid);
- assert.equal(k[4],'6|enrico|gabriel');
- const protections={'5':new Set(['F','E'])};
- assert.equal(f.context.estaProtegidoManualmente_(protections,5,'F'),true);
- assert.equal(f.context.estaProtegidoManualmente_(protections,5,'B'),false);
+ f.rows[4]=['Enrico',1,0,'Gabriel','Finalizada','https://lichess.org/2Lx5SE4D',
+    new Date(created),new Date(created+86400000)];
+ const result=f.context.descobrirPartidas_(false);
+ assert.equal(result.candidatos,0);
+ assert.equal(result.consultas,0);
 });

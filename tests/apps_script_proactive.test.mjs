@@ -93,17 +93,10 @@ test('HTTP 403 interrompe descoberta, sem insistência e cria pausa',()=>{
  assert.equal(queriedPairs(f).length,1);
  assert.ok(Number(f.props.DESCOBERTA_PAUSA_ATE_V1)>Date.now());
 });
-test('edição humana de F, mesmo removendo link, impede redescoberta',()=>{
+test('links removidos manualmente voltam a ser candidatos à descoberta',()=>{
  const f=fixture({approved:false});
- const range={getSheet:()=>f.sheets['2'],getColumn:()=>6,getNumColumns:()=>1,
-   getRow:()=>2,getNumRows:()=>1};
- f.ctx.onEdit({source:f.book,range});
- assert.equal(f.sheets._ControleManualLichess.values.length,2);
- assert.equal(f.sheets._ControleManualLichess.values[1][2],'F');
- const protectedRows=f.ctx.lerProtecoesManuais_(f.book,f.rows);
- assert.equal(f.ctx.estaProtegidoManualmente_(protectedRows,2,'F'),true);
- const res=f.ctx.simularDescoberta();
- assert.equal(res.pendentes,5);
- assert.equal(res.linhasAnalisadas,4);
- assert.ok(!queriedPairs(f).includes('brancas0'));
+ const result=f.ctx.descobrirPartidas_(false);
+ assert.equal(result.pendentes,6);
+ assert.equal(result.linhasAnalisadas,4);
+ assert.equal(f.writes.length,0);
 });
